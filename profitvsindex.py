@@ -23,7 +23,7 @@ from japandata.maps.data import load_map
 from japandata.indices.data import local_ind_df, pref_ind_df, prefmean_ind_df
 
 PLOT_FOLDER = os.path.join(os.getcwd(), 'profitvsindex/')
-EXTRA_PLOT_FOLDER = './manuscript/draft/figures/'
+EXTRA_PLOT_FOLDER = './furusato-private/draft/figures/'
 
 output_filetypes = ['pdf']
 

@@ -20,9 +20,10 @@ from japandata.furusatonouzei.data import furusato_df
 
 import contextily as cx
 from xyzservices import TileProvider
-cx.set_cache_dir("/Users/sam/Projects/civic/nouzei/tilecache/")
 
-mapboxToken = 'pk.eyJ1IjoibWl0aHJpZGF0ZXN2aSIsImEiOiJjbDRnOXN5cncwNHNuM2pzMWh2dmxxbjV0In0.9-uaCrXVRRr7fNB2sD4NrA'
+from config import mapboxToken, tileCacheDirectory
+
+cx.set_cache_dir(tileCacheDirectory)
 
 def make_pref(PREFECTURE):
     print(PREFECTURE)

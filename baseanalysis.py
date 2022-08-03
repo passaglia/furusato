@@ -15,7 +15,7 @@ from matplotlib.ticker import FuncFormatter,StrMethodFormatter
 
 
 PLOT_FOLDER = os.path.join(os.path.dirname(__file__),'basicgraphics/')
-EXTRA_PLOT_FOLDER = './manuscript/draft/figures/'
+EXTRA_PLOT_FOLDER = './furusato-private/draft/figures/'
 
 output_filetypes = ['pdf','png']
 
