@@ -1,0 +1,5 @@
+*.pyc
+config.py
+__pycache__/
+tilecache/
+furusato-private/
