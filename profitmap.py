@@ -253,7 +253,10 @@ for i in range(len(map_df)):
 
 import shapely
 
-map_df.loc[map_df['prefecture'] == "沖縄県", 'geometry'] = map_df.loc[map_df['prefecture'] == "沖縄県", 'geometry'].affine_transform([1, 0, 0, 1, 7.5, 14.5])
+## If I want to make the map curvey I need to do something like the d3 algorithm (see my d3 notes)
+
+# map_df.loc[map_df['prefecture'] == "沖縄県", 'geometry'] = map_df.loc[map_df['prefecture'] == "沖縄県", 'geometry'].affine_transform([1, 0, 0, 1, 7.5, 14.5])
+map_df.loc[map_df['prefecture'] == "沖縄県", 'geometry'] = map_df.loc[map_df['prefecture'] == "沖縄県", 'geometry'].affine_transform([1, 0, 0, 1, 6.5, 13])
 
 rotation_angle = -17
 rotation_origin = map_df[map_df.is_valid].unary_union.centroid
@@ -280,9 +283,9 @@ for lang in langs:
     #cmap = ListedColormap([matplotlib.colors.to_hex(color) for color in rgbacolors])
     cmap, norm = matplotlib.colors.from_levels_and_colors(bins, rgbacolors, extend="neither")
 
-    map_df.plot(column=datacolumn, ax=ax,  cmap=cmap, norm=norm,legend=False, edgecolor='grey',lw=.05)#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
-    national_map_df.plot(ax=ax,edgecolor=(0,0,0),facecolor="None",lw=.3)
-    map_df.loc[map_df['prefecture'] == "沖縄県"].plot(ax=ax,edgecolor=(0,0,0),facecolor="None",lw=.3)#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
+    map_df.plot(column=datacolumn, ax=ax,  cmap=cmap, norm=norm,legend=False,lw=.05, edgecolor='#4341417c')#edgecolor='grey'#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
+    #national_map_df.plot(ax=ax,edgecolor=(0,0,0),facecolor="None",lw=.3)
+    #map_df.loc[map_df['prefecture'] == "沖縄県"].plot(ax=ax,edgecolor=(0,0,0),facecolor="None",lw=.3)#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
 
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
@@ -309,8 +312,12 @@ for lang in langs:
     ax.set_xlim([128.5,147.2])
     ax.set_ylim([33.3,44.2])
 
+    # pc=[135.2,40]
+    # L = 2.5
+    # phi = 59*np.pi/180
+    # theta = 150*np.pi/180
     pc=[135.2,40]
-    L = 2.5
+    L = 1.5
     phi = 59*np.pi/180
     theta = 150*np.pi/180
     pR = [L*np.sin(phi)+pc[0],L*np.cos(phi)+pc[1]]

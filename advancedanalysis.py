@@ -110,7 +110,7 @@ pref_df.loc[(pref_df['year'] == year),['prefecture', 'donations']].sort_values([
 pref_df.loc[(pref_df['year'] == year),['prefecture', 'total-pop']].sort_values(['total-pop'])
 
 ##############################
-#### Output municipal table  ###########
+#### Output municipal table  #
 ##############################
 
 year = 2021
@@ -119,7 +119,9 @@ local_df.loc[(local_df['year'] == year),['prefecture','city', 'profit-per-person
 local_df.loc[(local_df['year'] == year),['city', 'donations']].sort_values(['donations'])
 local_df.loc[(local_df['year'] == year),['city', 'total-pop']].sort_values(['total-pop'])
 
-
+test_df = local_df.loc[(local_df['year'] == year),['city', 'netgainminusdeductions']]
+test_df['rank'] = test_df['netgainminusdeductions'].rank(ascending=False)
+test_df.loc[test_df['city']=='厚岸町']
 ##############################
 #### PROFIT AND POPULATION  ##
 ##############################
@@ -390,11 +392,11 @@ for lang in langs:
     if lang == 'en':
         ax.text(2008, .5, colorstring+r'\textbf{\textcolor{yellow}{All-Japan median}}', va='bottom', ha='left', fontsize=14)
         ax.text(2008, .29, colorstring+r'\textbf{\textcolor{orange}{25th percentile: One quarter lie below this line}}', va='bottom', ha='left', fontsize=14)
-        ax.text(2008, .1, colorstring+r'\textbf{\textcolor{red}{Weakest 20 municipalities}}', va='bottom', ha='left', fontsize=14)
+        ax.text(2008, .1, colorstring+r'\textbf{\textcolor{red}{Economically weakest 20 municipalities}}', va='bottom', ha='left', fontsize=14)
     elif lang == 'jp':
         ax.text(2008, .52, colorstring+r'\textbf{\textcolor{yellow}{全国中央値}}', va='bottom', ha='left', fontsize=14)
         ax.text(2008, .31, colorstring+r'\textbf{\textcolor{orange}{２５パーセンタイル：この線の下には自治体の４分の１}}', va='bottom', ha='left', fontsize=14)
-        ax.text(2008, .12, colorstring+r'\textbf{\textcolor{red}{最弱２０自治体}}', va='bottom', ha='left', fontsize=14)
+        ax.text(2008, .12, colorstring+r'\textbf{\textcolor{red}{財政力最弱２０自治体}}', va='bottom', ha='left', fontsize=14)
 
     ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
     ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.1f}'.format))
