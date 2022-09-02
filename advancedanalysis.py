@@ -6,8 +6,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import folium
 from folium.features import GeoJsonTooltip
-from samplot.utils import init_plotting
+from samplot.circusboy import CircusBoy
 import samplot.colors as samcolors
+
 import seaborn as sns
 import branca.colormap as cm
 import plotly.express as px
@@ -31,6 +32,8 @@ os.makedirs(MAP_FOLDER, exist_ok=True)
 
 oku = 10**8
 hyakuman = 10**6
+
+cb = CircusBoy(baseFont=['Helvetica','Hiragino Maru Gothic Pro'],titleFont=['Helvetica','Hiragino Maru Gothic Pro'],textFont=['Helvetica','Hiragino Maru Gothic Pro'], fontsize=12,figsize=(6,4))
 
 ###################################
 ##### Merging pop data over years #
@@ -126,11 +129,11 @@ test_df.loc[test_df['city']=='厚岸町']
 #### PROFIT AND POPULATION  ##
 ##############################
 
-fig, ax = init_plotting(style='nyt')
-title_string = r"Population vs Profit"
-#subtitle_string = r"(1m people)"
-#ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title_string, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+fig, ax = cb.handlers()
+title = r"Population vs Profit"
+#subtitle = r"(1m people)"
+#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 year = [2020]
 ax.scatter(local_df.loc[local_df['year'].isin(year)]['total-pop'],local_df.loc[local_df['year'].isin(year)]['netgainminusdeductions'])
 for suffix in output_filetypes:
@@ -145,11 +148,11 @@ plt.close('all')
 #### PROFIT AND POP CHANGE  ##
 ##############################
 
-fig, ax = init_plotting(style='nyt')
-title_string = r"Population Change vs Profit"
-#subtitle_string = r"(1m people)"
-#ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title_string, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+fig, ax = cb.handlers()
+title = r"Population Change vs Profit"
+#subtitle = r"(1m people)"
+#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 year = [2020]
 ax.scatter(local_df.loc[local_df['year'].isin(year)]['in-minus-out-rate'],local_df.loc[local_df['year'].isin(year)]['netgainminusdeductions'])
 for suffix in output_filetypes:
@@ -164,11 +167,11 @@ plt.close('all')
 #### DONATIONS AND POP CHANGE  ##
 ##############################
 
-fig, ax = init_plotting(style='nyt')
-title_string = r"Population Change vs Donations"
-#subtitle_string = r"(1m people)"
-#ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title_string, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+fig, ax = cb.handlers()
+title = r"Population Change vs Donations"
+#subtitle = r"(1m people)"
+#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 year = [2020]
 ax.scatter(local_df.loc[local_df['year'].isin(year)]['in-minus-out-rate'],local_df.loc[local_df['year'].isin(year)]['donations'])
 for suffix in output_filetypes:
@@ -183,11 +186,11 @@ plt.close('all')
 #### DONATIONS AND STRENGTH ##
 ##############################
 
-fig, ax = init_plotting(style='nyt')
-title_string = r"Donations vs Strength"
-#subtitle_string = r"(1m people)"
-#ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title_string, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+fig, ax = cb.handlers()
+title = r"Donations vs Strength"
+#subtitle = r"(1m people)"
+#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 year = [2020]
 ax.scatter(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'],local_df_no23.loc[local_df_no23['year'].isin(year)]['donations'])
 for suffix in output_filetypes:
@@ -202,11 +205,11 @@ plt.close('all')
 #### PROFIT AND STRENGTH  ##
 ##############################
 
-fig, ax = init_plotting(style='nyt')
-title_string = r"Profit vs Strength"
-#subtitle_string = r"(1m people)"
-#ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title_string, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+fig, ax = cb.handlers()
+title = r"Profit vs Strength"
+#subtitle = r"(1m people)"
+#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 year = [2020]
 ax.scatter(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'],local_df_no23.loc[local_df_no23['year'].isin(year)]['netgainminusdeductions'])
 for suffix in output_filetypes:
@@ -221,11 +224,11 @@ plt.close('all')
 #### DONATIONS AND STRENGTH ーー PREF ##
 ##############################
 
-fig, ax = init_plotting(style='nyt')
-title_string = r"Donations vs Strength"
-#subtitle_string = r"(1m people)"
-#ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title_string, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+fig, ax = cb.handlers()
+title = r"Donations vs Strength"
+#subtitle = r"(1m people)"
+#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 year = [2017]
 ax.scatter(fn_pop_ind_pref_df.loc[fn_pop_ind_pref_df['year'].isin(year)]['economic-strength-index'],fn_pop_ind_pref_df.loc[fn_pop_ind_pref_df['year'].isin(year)]['donations'])
 for suffix in output_filetypes:
@@ -240,11 +243,11 @@ plt.close('all')
 #### PROFIT AND STRENGTH -- PREF   ##
 ##############################
 
-fig, ax = init_plotting(style='nyt')
-title_string = r"Profit vs Strength"
-#subtitle_string = r"(1m people)"
-#ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title_string, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+fig, ax = cb.handlers()
+title = r"Profit vs Strength"
+#subtitle = r"(1m people)"
+#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 year = [2020]
 ax.scatter(fn_pop_ind_pref_df.loc[fn_pop_ind_pref_df['year'].isin(year)]['economic-strength-index'],fn_pop_ind_pref_df.loc[fn_pop_ind_pref_df['year'].isin(year)]['netgainminusdeductions'])
 for suffix in output_filetypes:
@@ -259,11 +262,11 @@ plt.close('all')
 #### DONATIONS AND STRENGTH HISTOGRAM ##
 ##############################
 
-fig, ax = init_plotting(style='nyt')
-title_string = r"Donations vs Strength"
-#subtitle_string = r"(1m people)"
-#ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title_string, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+fig, ax = cb.handlers()
+title = r"Donations vs Strength"
+#subtitle = r"(1m people)"
+#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 year = [2018]
 ax.hist(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], bins=20, density=True, color=samcolors.nice_colors(3))
 ax.hist(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], bins=20, weights = local_df_no23.loc[local_df_no23['year'].isin(year)]['donations'], density=True, color=samcolors.nice_colors(0),alpha=.5)
@@ -275,11 +278,11 @@ plt.close('all')
 #### DONATIONS AND STRENGTH PLOT ##
 ##############################
 
-fig, ax = init_plotting(style='nyt')
-title_string = r"Donations vs Strength"
-#subtitle_string = r"(1m people)"
-#ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title_string, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+fig, ax = cb.handlers()
+title = r"Donations vs Strength"
+#subtitle = r"(1m people)"
+#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 year = [2020]#2016,2017,2018,2019,
 from scipy.stats import binned_statistic
 mean, _, _ = binned_statistic(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], local_df_no23.loc
@@ -297,11 +300,11 @@ plt.close('all')
 #### PROFIT AND STRENGTH PLOT ##
 ##############################
 
-fig, ax = init_plotting(style='nyt')
-title_string = r"Profit vs Strength"
-#subtitle_string = r"(1m people)"
-#ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title_string, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+fig, ax = cb.handlers()
+title = r"Profit vs Strength"
+#subtitle = r"(1m people)"
+#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 year = [2020]#2016,2017,2018,2019,
 from scipy.stats import binned_statistic
 mean, _, _ = binned_statistic(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], local_df_no23.loc
@@ -320,11 +323,11 @@ plt.close('all')
 #### PROFIT PER CAPITA AND STRENGTH PLOT ##
 ##############################
 
-fig, ax = init_plotting(style='nyt')
-title_string = r"Profit Per Capita vs Strength"
-#subtitle_string = r"(1m people)"
-#ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title_string, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+fig, ax = cb.handlers()
+title = r"Profit Per Capita vs Strength"
+#subtitle = r"(1m people)"
+#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 year = [2020]
 from scipy.stats import binned_statistic
 mean, _, _ = binned_statistic(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], local_df_no23.loc
@@ -361,14 +364,16 @@ r"\definecolor{orange}{rgb}{"+str(samcolors.nice_colors(0.5))[1:-1]+"}" +
 r"\definecolor{red}{rgb}{"+str(samcolors.nice_colors(0))[1:-1]+"}" 
 )
 
-title_strings = {'en':r"\textbf{The top winners are already relatively rich}", 'jp':r"\textbf{儲かっている自治体は比較的にもう裕福}"}
-subtitle_strings = {'en':colorstring+r"Economic strength index of \textbf{\textcolor{blue}{top " + str(topN) + " municipalities}}", 'jp':
+titles = {'en':r"\textbf{The top winners are already relatively rich}", 'jp':r"\textbf{儲かっている自治体は比較的にもう裕福}"}
+subtitles = {'en':colorstring+r"Economic strength index of \textbf{\textcolor{blue}{top " + str(topN) + " municipalities}}", 'jp':
 colorstring+r"寄附金額が多い\textbf{\textcolor{blue}{２０自治体}}の財政力指標"}
 
 for lang in langs:
-    fig, ax = init_plotting(style='nyt',figsize=(6,4))
-    ax.set_title(subtitle_strings[lang], x=0., y=1.0, fontsize=14,ha='left',va='bottom',wrap=True)
-    fig.suptitle(title_strings[lang], x=0,y=1.13, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+    fig, ax = cb.handlers()
+    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
+    cb.set_yTickLabels(ax)
+    # cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
+    # cb.set_byline(ax, "by Sam Passaglia")
 
     names_list = []
     topN_economic_list=[]
@@ -386,7 +391,7 @@ for lang in langs:
     #ax.plot(fn_rough_ind_df.year.unique(),  [np.quantile(all_economic_list[i],.01) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0))
     ax.plot(fn_rough_ind_df.year.unique(),  [np.mean(np.sort(all_economic_list[i])[0:20]) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0))
 
-    ax.set_xlim(min(furusato_rough_df.year)-.5,max(furusato_rough_df.year)+.5)
+    ax.set_xlim(min(furusato_rough_df.year)-.8,max(furusato_rough_df.year)+.2)
     ax.set_xticks([2009,2011,2013,2015,2017,2019,2021])
 
     if lang == 'en':
@@ -411,11 +416,11 @@ for lang in langs:
 # #### DONATIONS AND BURDEN HISTOGRAM ##
 # ##############################
 
-# fig, ax = init_plotting(style='nyt')
-# title_string = r"Donations vs Burden"
-# #subtitle_string = r"(1m people)"
-# #ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-# fig.suptitle(title_string, x=0,y=1.1, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+# fig, ax = cb.handlers()
+# title = r"Donations vs Burden"
+# #subtitle = r"(1m people)"
+# #ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+# fig.suptitle(title, x=0,y=1.1, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 # year = [2020]
 # ax.hist(local_df_no23.loc[local_df_no23['year'].isin(year)]['future-burden-rate'], bins=20, density=True, color=samcolors.nice_colors(3))
 # ax.hist(local_df_no23.loc[local_df_no23['year'].isin(year)]['future-burden-rate'], bins=20, weights = local_df_no23.loc[local_df_no23['year'].isin(year)]['donations'], density=True, color=samcolors.nice_colors(0),alpha=.5)
@@ -427,11 +432,11 @@ for lang in langs:
 # #### DONATIONS AND laspeyres ##
 # ##############################
 
-# fig, ax = init_plotting(style='nyt')
-# title_string = r"Donations vs laspeyres"
-# #subtitle_string = r"(1m people)"
-# #ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-# fig.suptitle(title_string, x=0,y=1.1, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+# fig, ax = cb.handlers()
+# title = r"Donations vs laspeyres"
+# #subtitle = r"(1m people)"
+# #ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+# fig.suptitle(title, x=0,y=1.1, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 # year = [2020]
 # ax.hist(local_df_no23.loc[local_df_no23['year'].isin(year)]['laspeyres'], bins=20, density=True, color=samcolors.nice_colors(3))
 # ax.hist(local_df_no23.loc[local_df_no23['year'].isin(year)]['laspeyres'], bins=20, weights = local_df_no23.loc[local_df_no23['year'].isin(year)]['donations'], density=True, color=samcolors.nice_colors(0),alpha=.5)
@@ -443,11 +448,11 @@ for lang in langs:
 # #### DONATIONS AND expense ##
 # ##############################
 
-# fig, ax = init_plotting(style='nyt')
-# title_string = r"Donations vs expense"
-# #subtitle_string = r"(1m people)"
-# #ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-# fig.suptitle(title_string, x=0,y=1.1, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+# fig, ax = cb.handlers()
+# title = r"Donations vs expense"
+# #subtitle = r"(1m people)"
+# #ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+# fig.suptitle(title, x=0,y=1.1, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 # year = [2020]
 # ax.hist(local_df_no23.loc[local_df_no23['year'].isin(year)]['regular-expense-rate'], bins=20, density=True, color=samcolors.nice_colors(3))
 # ax.hist(local_df_no23.loc[local_df_no23['year'].isin(year)]['regular-expense-rate'], bins=20, weights = local_df_no23.loc[local_df_no23['year'].isin(year)]['donations'], density=True, color=samcolors.nice_colors(0),alpha=.5)
@@ -460,11 +465,11 @@ for lang in langs:
 # #### PROFIT AND STRENGTH HISTOGRAM ##
 # ##############################
 
-# fig, ax = init_plotting(style='nyt')
-# title_string = r"Profit vs Strength"
-# #subtitle_string = r"(1m people)"
-# #ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-# fig.suptitle(title_string, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+# fig, ax = cb.handlers()
+# title = r"Profit vs Strength"
+# #subtitle = r"(1m people)"
+# #ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+# fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 # year = [2020]
 # #ax.hist(fn_ind_df.loc[fn_ind_df['year'].isin(year)]['economic-strength-index'])
 # ax.hist(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], bins=20, color=samcolors.nice_colors(3))

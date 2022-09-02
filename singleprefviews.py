@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import folium
 from folium.features import GeoJsonTooltip
 from samplot.utils import init_plotting
+from samplot.baseplot import BasePlot
 import samplot.colors as samcolors
 import seaborn as sns
 import branca.colormap as cm
@@ -16,7 +17,6 @@ import shutil
 import jaconv 
 
 from japandata.furusatonouzei.data import furusato_df
-
 
 import contextily as cx
 from xyzservices import TileProvider
@@ -44,7 +44,6 @@ def make_pref(PREFECTURE):
     from japandata.maps.data import load_map
     from japandata.indices.data import local_ind_df, pref_ind_df, prefmean_ind_df
     from japandata.readings.data import names_df, pref_names_df
-
 
     year_clone_df = local_pop_df.loc[local_pop_df['year'] == 2020].copy()
     year_clone_df['year'] = 2021
@@ -367,7 +366,7 @@ def make_pref(PREFECTURE):
     PREFECTURE_EN = (pref_names_df.loc[pref_names_df['prefecture']==PREFECTURE, 'prefecture-reading'].iloc[0]).replace('ou','o').replace('oo','o').title() 
     
     langs = ['en', 'jp']
-    title_strings = {'en':r"\textbf{Furusato n\={o}zei profit in "+ PREFECTURE_EN +  r" Prefecture in " + str(year) + "}", 
+    title_strings = {'en':r"\textbf{Furusato n\={o}zei profit in "+ PREFECTURE_EN +  r"  in " + str(year) + "}", 
     'jp': r"\textbf{" + PREFECTURE + "におけるふるさと納税純利益（" + str(year) + "年）}"} #jaconv.h2z(str(year),digit=True)
     xlabels = {'en': r'Profit (\textyen mn)', 'jp': r'純利益 (億円)'}
     losslabels = {'en':r"Loss",'jp':r"損失"}
@@ -395,8 +394,12 @@ def make_pref(PREFECTURE):
         dpi=400
         if PREFECTURE == '北海道':
             dpi=300
-        fig, ax  = init_plotting(style='map', figsize=(6,6), fontsize=10, dpi=dpi)
-        fig.suptitle(title_strings[lang], x=0,y=1.01, fontsize=16,ha='left',va='bottom', transform=ax.transAxes, wrap=True)
+        
+        bp = BasePlot(figsize=(6,6), fontsize=12,dpi=dpi)
+        fig, ax  = bp.handlers()
+        plt.axis('off')
+        #fig, ax  = init_plotting(style='map', figsize=(6,6), fontsize=10, dpi=dpi)
+        fig.suptitle(title_strings[lang], x=0,y=1.01, fontsize=bp.titlesize,ha='left',va='bottom', transform=ax.transAxes, wrap=True)
         #t = fig.suptitle(title_strings[lang], x=0.05,y=.95, fontsize=16,ha='left',va='top', transform=ax.transAxes, wrap=True,bbox=dict(facecolor='white', alpha=1, edgecolor='white'))
         #, boxstyle='round,pad=.1'
 
@@ -430,7 +433,8 @@ def make_pref(PREFECTURE):
         from matplotlib.ticker import FuncFormatter,StrMethodFormatter
         cax.xaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
         cax.text(largenegativenumber/scalingfactors[lang]/2,1.5, losslabels[lang], ha='center')
-
+        cb2.ax.tick_params(axis='both', colors='none')
+        cb2.outline.set_edgecolor('none')
         cb2.set_label(xlabels[lang])
 
         mainprovider = cx.providers.CartoDB.VoyagerNoLabels(r="@2x")

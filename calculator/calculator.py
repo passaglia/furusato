@@ -29,9 +29,11 @@ assert (maxDonation(10**7) == 2000+sum(maxDonationBreakdown(10**7)))
 
 import numpy as np
 import matplotlib.pyplot as plt
-from samplot.utils import init_plotting
+from samplot.circusboy import CircusBoy
 from samplot.colors import nice_colors
 from matplotlib.ticker import FuncFormatter,StrMethodFormatter
+
+cb = CircusBoy(baseFont=['Helvetica','Hiragino Maru Gothic Pro'],titleFont=['Helvetica','Hiragino Maru Gothic Pro'],textFont=['Helvetica','Hiragino Maru Gothic Pro'], fontsize=12,figsize=(6,4))
 
 save_folder = './calculatorgraph/'
 save_folder2 = '../furusato-private/draft/figures/'
@@ -43,9 +45,9 @@ breakdowns = np.array([maxDonationBreakdown(income) for income in incomes])
 
 
 scalings = {'en': 10**6, 'jp': 10000}
-title_strings = {'en':r"\textbf{High earners can get many more gifts}", 
+titles = {'en':r"\textbf{High earners can get many more gifts}", 
 'jp':r"\textbf{ふるさと納税の逆進性}"}
-subtitle_strings ={'en':r"Proportion of income which is eligible for donation", 
+subtitles ={'en':r"Proportion of income which is eligible for donation", 
 'jp':r'給与収入による最大寄付額の割合'}
 xlabels = {'en':'Personal income (￥mn)', 
 'jp':r'給与収入 （万円）'}
@@ -54,16 +56,20 @@ textlabels = {'en':r'(For a household with no dependents)', 'jp':r'（単身世�
 langs = ['en','jp']
 for lang in langs: 
 
-    fig, ax = init_plotting(style='nyt')
-    ax.set_title(subtitle_strings[lang], x=0., y=1.01, fontsize=14,ha='left',va='bottom')
-    fig.suptitle(title_strings[lang], x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
-    ax.set_xlabel(xlabels[lang])
+    fig, ax = cb.handlers()
+
+    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
+    cb.set_yTickLabels(ax)
+    #cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside',pad=10)
+    #cb.set_byline(ax, "Sam Passaglia",pad=-4.5)
+
+    ax.set_xlabel(xlabels[lang],color='black')
     ax.plot(incomes/scalings[lang],np.array(deductions/incomes)*100, color=nice_colors(3))
     from matplotlib.offsetbox import AnchoredText
     
-    ax.annotate(textlabels[lang], xy=(1, 0), xytext=(-12, +12), size=14, va='bottom', ha='right', xycoords='axes fraction', textcoords='offset points',color='grey')# bbox=dict(boxstyle='round', fc='w'),
-    ax.plot(incomes/scalings[lang],np.array(breakdowns[:,0]/incomes)*100, color=nice_colors(2),ls='--')
-    ax.plot(incomes/scalings[lang],np.array((breakdowns[:,1]+breakdowns[:,2])/incomes)*100, color=nice_colors(1))
+    ax.annotate(textlabels[lang], xy=(1, 0), xytext=(-4, +4), va='bottom', ha='right', xycoords='axes fraction', textcoords='offset points',color=cb.grey)# bbox=dict(boxstyle='round', fc='w'),
+    #ax.plot(incomes/scalings[lang],np.array(breakdowns[:,0]/incomes)*100, color=nice_colors(2),ls='--')
+    #ax.plot(incomes/scalings[lang],np.array((breakdowns[:,1]+breakdowns[:,2])/incomes)*100, color=nice_colors(1))
     ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.0f}\%'.format))
     ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
     ax.set_ylim([0,4.05])
@@ -73,8 +79,8 @@ for lang in langs:
     fig.savefig(save_folder+'fracdeduction_vs_income_' + lang + '.png')
     plt.close('all')
 
-# shutil.copy(save_folder+'fracdeduction_vs_income_en.pdf',save_folder2)
-# shutil.copy(save_folder+'fracdeduction_vs_income_jp.pdf',save_folder2)
+shutil.copy(save_folder+'fracdeduction_vs_income_en.pdf',save_folder2)
+shutil.copy(save_folder+'fracdeduction_vs_income_jp.pdf',save_folder2)
 
 ## Regressiveness http://illusttax.com/furusato-tax/
 #https://www.mof.go.jp/tax_policy/summary/income/b02.htm
@@ -84,9 +90,9 @@ for lang in langs:
 ############
 
 scalings = {'en': 10**6, 'jp': 10000}
-title_strings = {'en':r"\textbf{Ratio of 住民税控除　to 所得税控除}", 
+titles = {'en':r"\textbf{Ratio of 住民税控除　to 所得税控除}", 
 'jp':r"\textbf{給与収入により、住民税控除/所得税控除の率}"}
-subtitle_strings ={'en':r"If you donated the max amount ", 
+subtitles ={'en':r"If you donated the max amount ", 
 'jp':r'最大寄附金格の場合。寄附金控除額の計算シミュレーション。'}
 xlabels = {'en':'Personal income (￥mn)', 
 'jp':r'給与収入 （万円）'}
@@ -95,9 +101,9 @@ textlabels = {'en':r'(For a household with no dependents)', 'jp':r'（単身世�
 langs = ['en','jp']
 for lang in langs: 
 
-    fig, ax = init_plotting(style='nyt')
-    ax.set_title(subtitle_strings[lang], x=0., y=1.01, fontsize=14,ha='left',va='bottom')
-    fig.suptitle(title_strings[lang], x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+    fig, ax == cb.handlers()
+    ax.set_title(subtitles[lang], x=0., y=1.01, fontsize=14,ha='left',va='bottom')
+    fig.suptitle(titles[lang], x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
     ax.set_xlabel(xlabels[lang])
     #ax.plot(incomes/scalings[lang],np.array(deductions/incomes)*100, color=nice_colors(3))
     from matplotlib.offsetbox import AnchoredText
@@ -125,9 +131,9 @@ for lang in langs:
 ############
 
 scalings = {'en': 10**6, 'jp': 10000}
-title_strings = {'en':r"\textbf{Ratio of 住民税控除　to 所得税控除}", 
+titles = {'en':r"\textbf{Ratio of 住民税控除　to 所得税控除}", 
 'jp':r"\textbf{給与収入により、住民税控除/所得税控除の率}"}
-subtitle_strings ={'en':r"If you donated the max amount ", 
+subtitles ={'en':r"If you donated the max amount ", 
 'jp':r'最大寄附金格の場合。寄附金控除額の計算シミュレーション。'}
 xlabels = {'en':'Personal income (￥mn)', 
 'jp':r'給与収入 （万円）'}
@@ -136,9 +142,9 @@ textlabels = {'en':r'(For a household with no dependents)', 'jp':r'（単身世�
 langs = ['en','jp']
 for lang in langs: 
 
-    fig, ax = init_plotting(style='nyt')
-    ax.set_title(subtitle_strings[lang], x=0., y=1.01, fontsize=14,ha='left',va='bottom')
-    fig.suptitle(title_strings[lang], x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+    fig, ax = cb.handlers()
+    ax.set_title(subtitles[lang], x=0., y=1.01, fontsize=14,ha='left',va='bottom')
+    fig.suptitle(titles[lang], x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
     ax.set_xlabel(xlabels[lang])
     #ax.plot(incomes/scalings[lang],np.array(deductions/incomes)*100, color=nice_colors(3))
     from matplotlib.offsetbox import AnchoredText

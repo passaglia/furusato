@@ -16,7 +16,6 @@ import shutil
 from matplotlib.ticker import FuncFormatter, StrMethodFormatter
 from japandata.readings.data import names_df, pref_names_df
 
-
 from japandata.population.data import local_pop_df, prefecture_pop_df
 from japandata.furusatonouzei.data import furusato_arr, furusato_df, furusato_pref_df
 from japandata.maps.data import load_map
@@ -124,25 +123,28 @@ map_style = {'location': [35.67, 139],
 #### PROFIT VS STRENGTH -- PREF   ##
 ##############################
 year = [2021]
-title_strings = {'en': r"\textbf{Profits don't go to the neediest prefectures}",
+titles = {'en': r"\textbf{Profits don't go to the neediest prefectures}",
                  'jp': r"\textbf{利益は困難な都道府県にいってない}"}
-subtitle_strings = {'en': r"Each prefecture's " + str(year[0])+ r" profit vs its economic strength",
-                    'jp': r"各都道府県の純利益と財政力指標（" + str(year[0])+"年）"}
-ylabels = {'en': r'Profit per capita (\textyen/person)', 'jp': r'一人当たりの純利益（円／人）'}
+subtitles = {'en': r"Prefectural profit per capita (" + str(year[0])+ r") vs economic strength",
+                    'jp': r"各都道府県の純利益（" + str(year[0])+"年）"+r"対財政力指標"}
+#ylabels = {'en': r'Profit per capita', 'jp': r'一人当たりの純利益'}
 xlabels = {'en': r'Economic Strength Index', 'jp': r'財政力指標'}
 
 langs = ['en', 'jp']
+from samplot.circusboy import CircusBoy
+
+cb = CircusBoy(baseFont=['Helvetica','Hiragino Maru Gothic Pro'],titleFont=['Helvetica','Hiragino Maru Gothic Pro'],textFont=['Helvetica','Hiragino Maru Gothic Pro'], fontsize=12,figsize=(6,4))
 
 for lang in langs:
-    fig, ax = init_plotting(style='nyt')
-    ax.spines['bottom'].set_color('none')
-
-    ax.set_title(subtitle_strings[lang], x=0.,
-                 y=1.0, fontsize=14, ha='left', va='bottom')
-    fig.suptitle(title_strings[lang], x=0, y=1.12, fontsize=18,
-                 ha='left', va='bottom', transform=ax.transAxes)
-    ax.set_xlabel(xlabels[lang])
-    ax.set_ylabel(ylabels[lang])
+    fig, ax = cb.handlers()
+    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
+    if lang =='en':
+        cb.set_yLabel(ax, yLabel=r'/person', currency=r'\textyen')
+    if lang =='jp':
+        cb.set_yLabel(ax, yLabel=r'円／人', currency=r'')   
+    cb.set_yTickLabels(ax)
+    
+    ax.set_xlabel(xlabels[lang], color='black')
 
     posinds = np.where(
         fn_ind_pref_df.loc[fn_ind_pref_df['year'].isin(year)]['profitperperson'] >= 0)
@@ -153,10 +155,10 @@ for lang in langs:
     ax.scatter(fn_ind_pref_df.loc[fn_ind_pref_df['year'].isin(year)]['economic-strength-index'].iloc[neginds],
                fn_ind_pref_df.loc[fn_ind_pref_df['year'].isin(year)]['profitperperson'].iloc[neginds], color=samcolors.nice_colors(3))
 
-    ax.set_xlim([.2, 1])
+    ax.set_xlim([.15, 1])
     ax.set_ylim([-6200, 21500])
     ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.1f}'.format))
-    ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
+    #ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
     ax.axhline(0, color='black', alpha=.5, ls='--')
 
     positions = {'en':
@@ -209,7 +211,7 @@ for lang in langs:
                 ha = 'center'
                 deltay -= ypad
             ax.text(x+deltax, y+deltay, label,
-                    fontsize=8, ha=ha, va=va)
+                    fontsize=8, ha=ha, va=va, color=cb.grey)
 
     #np.mean(fn_ind_pref_df.loc[(fn_ind_pref_df['year'].isin(year)) & (fn_ind_pref_df['prefecture']!='東京都')]['economic-strength-index'])
     for suffix in output_filetypes:

@@ -7,13 +7,16 @@ import matplotlib.pyplot as plt
 import folium
 from folium.features import GeoJsonTooltip
 from samplot.utils import init_plotting
+from samplot.baseplot import BasePlot
+from samplot.circusboy import CircusBoy
+
+
 import samplot.colors as samcolors
 import seaborn as sns
 import branca.colormap as cm
 import plotly.express as px
 import plotly.graph_objects as go
 import shutil
-
 
 from japandata.population.data import local_pop_df, prefecture_pop_df
 from japandata.furusatonouzei.data import furusato_arr, furusato_df, furusato_pref_df
@@ -31,9 +34,10 @@ os.makedirs(PLOT_FOLDER, exist_ok=True)
 oku = 10**8
 hyakuman = 10**6
 
-###################################
+############################################
 ##### Merging pop data over years ##########
-###################################
+############################################
+
 year_clone_df = local_pop_df.loc[local_pop_df['year'] == 2020].copy()
 year_clone_df['year'] = 2021
 local_pop_df = pd.concat([local_pop_df, year_clone_df])
@@ -237,7 +241,7 @@ m.save(PLOT_FOLDER+"profit_map.html")
 
 mapyear = 2021
 map_df = load_map(mapyear,level='prefecture', quality='stylized')
-national_map_df = load_map(mapyear,level='japan', quality='stylized')
+#national_map_df = load_map(mapyear,level='japan', quality='stylized')
 df = pref_df.loc[furusato_df['year']==mapyear]
 #df = pref_sum_df 
 
@@ -253,26 +257,26 @@ for i in range(len(map_df)):
 
 import shapely
 
-## If I want to make the map curvey I need to do something like the d3 algorithm (see my d3 notes)
-
-# map_df.loc[map_df['prefecture'] == "沖縄県", 'geometry'] = map_df.loc[map_df['prefecture'] == "沖縄県", 'geometry'].affine_transform([1, 0, 0, 1, 7.5, 14.5])
 map_df.loc[map_df['prefecture'] == "沖縄県", 'geometry'] = map_df.loc[map_df['prefecture'] == "沖縄県", 'geometry'].affine_transform([1, 0, 0, 1, 6.5, 13])
 
 rotation_angle = -17
 rotation_origin = map_df[map_df.is_valid].unary_union.centroid
 map_df['geometry']=map_df['geometry'].rotate(rotation_angle,origin=rotation_origin)
-national_map_df['geometry']=national_map_df['geometry'].rotate(rotation_angle,origin=rotation_origin)
+#national_map_df['geometry']=national_map_df['geometry'].rotate(rotation_angle,origin=rotation_origin)
 
-title_strings = {'en':r"\textbf{Winning and losing prefectures}" + '\n' + r"\textbf{"+str(mapyear)+"}", 
+#map_df = map_df.to_crs("EPSG:3395")
+map_df = map_df.to_crs("EPSG:30166")
+
+
+titles = {'en':r"\textbf{Winning and losing prefectures}" + '\n' + r"\textbf{"+str(mapyear)+"}", 
 'jp':r"\textbf{儲かっている、損している都道府県}" + '\n' + r"\textbf{"+str(mapyear)+"}"}#都道府県での勝ち組と負け組
 labels = {'en':r'Profit per capita (\textyen/person)', 'jp':r'一人当たりのふるさと納税純利益（円／人）'}
 langs = ['en','jp']
 
 for lang in langs:
-    fig, ax  = init_plotting(style='map', figsize=(6,5), fontsize=10)
-    #fig, ax  = init_plotting(figsize=(6,5), fontsize=10)
-
-    fig.suptitle(title_strings[lang], x=-.18,y=1.0, fontsize=16,ha='left',va='top', transform=ax.transAxes, wrap=True)
+    bp = BasePlot(figsize=(6,6), fontsize=12)
+    fig, ax  = bp.handlers()
+    plt.axis('off')
 
     from matplotlib.colors import TwoSlopeNorm
     bins = [-11000,-6000,-1000, 0, 1000, 6000, 11000, 21000]
@@ -283,16 +287,27 @@ for lang in langs:
     #cmap = ListedColormap([matplotlib.colors.to_hex(color) for color in rgbacolors])
     cmap, norm = matplotlib.colors.from_levels_and_colors(bins, rgbacolors, extend="neither")
 
-    map_df.plot(column=datacolumn, ax=ax,  cmap=cmap, norm=norm,legend=False,lw=.05, edgecolor='#4341417c')#edgecolor='grey'#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
+    ax = map_df.plot(column=datacolumn, ax=ax,  cmap=cmap, norm=norm,legend=False,lw=.05, edgecolor='#4341417c')#edgecolor='grey'#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
     #national_map_df.plot(ax=ax,edgecolor=(0,0,0),facecolor="None",lw=.3)
     #map_df.loc[map_df['prefecture'] == "沖縄県"].plot(ax=ax,edgecolor=(0,0,0),facecolor="None",lw=.3)#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
+    ax.set_xlim([-.75*10**6,.98*10**6])
+    ax.set_ylim([-.28*10**6,.95*10**6])
+
+    fig.suptitle(titles[lang], x=0,y=1.0, fontsize=bp.titlesize,ha='left',va='top', transform=ax.transAxes)
 
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("bottom", size="2%", pad=0.05)
-    cb2 = matplotlib.colorbar.ColorbarBase(cax, cmap=cmap,
+    #cax = divider.append_axes("bottom", size="2%", pad=0.03)
+
+    cbwidth = ax.get_position().width*.75
+    axwidth = ax.get_position().width
+    xstart = ax.get_position().x0 + (axwidth-cbwidth)/2
+    cbheight = .015
+    cax = fig.add_axes([xstart,ax.get_position().y0-cbheight,cbwidth,cbheight])
+
+    cb = matplotlib.colorbar.ColorbarBase(cax, cmap=cmap,
                                     norm=norm,
-                                    boundaries=  bins,
+                                    boundaries=bins,
                                     extend='neither',
                                     ticks=bins,
                                     #spacing='proportional',
@@ -300,8 +315,11 @@ for lang in langs:
                                     orientation='horizontal')
     from matplotlib.ticker import FuncFormatter,StrMethodFormatter
     cax.xaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
+    cb.ax.tick_params(axis='both', colors='none')
+    cb.outline.set_edgecolor('none')
+    cb.set_label(labels[lang],color='black')
+    #cax.xaxis.set_label_position('top')
 
-    cb2.set_label(labels[lang])
 
     #https://medium.datadriveninvestor.com/creating-a-discrete-colorbar-with-custom-bin-sizes-in-matplotlib-50b0daf8dd46
 
@@ -309,23 +327,19 @@ for lang in langs:
     # map_df.plot(column=datacolumn, ax=ax, norm=norm, cmap='coolwarm',legend=True)
 
     #https://stackoverflow.com/questions/36008648/colorbar-on-geopandas
-    ax.set_xlim([128.5,147.2])
-    ax.set_ylim([33.3,44.2])
 
-    # pc=[135.2,40]
-    # L = 2.5
-    # phi = 59*np.pi/180
-    # theta = 150*np.pi/180
-    pc=[135.2,40]
-    L = 1.5
-    phi = 59*np.pi/180
-    theta = 150*np.pi/180
+    pc=[-1*10**4,4.2*10**5]
+    L = 1.2*10**5
+    phi = 35*np.pi/180 ## angle to vertical
+    theta = 140*np.pi/180 ## opening angle
     pR = [L*np.sin(phi)+pc[0],L*np.cos(phi)+pc[1]]
     pL = [pc[0]-L*np.cos(np.pi/2-theta+phi),pc[1]+L*np.sin(np.pi/2-theta+phi)]
-    ax.plot([pL[0],pc[0],pR[0]], [pL[1],pc[1],pR[1]], color='grey',lw=1)
+    ax.plot([pL[0],pc[0],pR[0]], [pL[1],pc[1],pR[1]], color='black',lw=1)
 
-    fig.savefig(PLOT_FOLDER+'prefecture-profit_' + lang + '.pdf',bbox_inches="tight",transparent=True)
-    fig.savefig(PLOT_FOLDER+'prefecture-profit_' + lang + '.png',bbox_inches="tight",transparent=True)
+    #bp.set_byline(cax, "Sam Passaglia",pad=-4.5)
+
+    fig.savefig(PLOT_FOLDER+'prefecture-profit_' + lang + '.pdf',transparent=True,bbox_inches="tight")
+    fig.savefig(PLOT_FOLDER+'prefecture-profit_' + lang + '.png',transparent=True,bbox_inches="tight")
     fig.savefig(EXTRA_PLOT_FOLDER+'prefecture-profit_' +lang +'.pdf',bbox_inches="tight",transparent=True)
     plt.close('all')
 
@@ -364,28 +378,41 @@ plt.close('all')
 
 year = [2016,2021]
 
-title_strings = {'en':r"\textbf{Gap between winners and losers is growing}", 
+titles = {'en':r"\textbf{Growing gap between winners and losers}", 
 'jp':r"\textbf{都道府県の間に、利益格差が広がっている}"}
-subtitle_strings = {'en':str(year[0]) + r" to " + str(year[1]) + " evolution of population and per-capita profit", 
-'jp':str(year[0]) + r"から" + str(year[1])+r"、各県の人口と一人当たり純利益の進化"}
+subtitles = {'en':r"Population and per-capita profit, " + str(year[0]) + r" to " + str(year[1]), 
+'jp':r"各県の人口と一人当たり純利益の進化、" + str(year[0]) + r"から" + str(year[1])}
 xlabels = {'en':r'Profit per capita  (\textyen/person)', 
 'jp':r'一人当たり純利益 (円／人）'} 
-ylabels = {'en':'Population (millions)', 
-'jp':r'人口 (百万人）'} 
+#ylabels = {'en':'Population ', 
+#'jp':r'人口'} 
 langs = ['en','jp']
 
-for lang in langs: 
-    fig, ax = init_plotting(style='nyt')
-    ax.set_title(subtitle_strings[lang], x=0., y=1.05, fontsize=14,ha='left',va='bottom',wrap=True)
-    fig.suptitle(title_strings[lang], x=0,y=1.2, fontsize=18,ha='left',va='bottom', transform=ax.transAxes, wrap=True)
-    ax.set_axisbelow(True)
-    ax.set_xlabel(xlabels[lang])
-    ax.set_ylabel(ylabels[lang])
-    ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
-    ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
+cb = CircusBoy(baseFont=['Helvetica','Hiragino Maru Gothic Pro'],titleFont=['Helvetica','Hiragino Maru Gothic Pro'],textFont=['Helvetica','Hiragino Maru Gothic Pro'], fontsize=12,figsize=(6,4), grey=[0.55,0.55,0.55])
 
-    deltas_jp = {"東京都":[0,-.5], "神奈川県":[200,.5], "大阪府":[0,-.5], "愛知県":[-2200,.2], "埼玉県":[200,-.4], "千葉県":[-2000,0], "兵庫県":[0,-.5], "福岡県":[-100,.5],"北海道":[0,-.5], "静岡県":[0,.5], "茨城県":[900,0], "京都府":[-1100,-.3], "広島県":[0,+.5], "奈良県":[-1700,0],"佐賀県":[5900,-.4],"鹿児島県":[4900,0],"宮崎県":[5900,.5], "山形県":[4000,.5],"熊本県":[1500,.5],"新潟県":[1200,.55], "徳島県":[0,-.5], "鳥取県":[0,-.5], "高知県":[2000,-.5], "山梨県":[7000,-.5]}
-    deltas_en = {"東京都":[0,-.5], "神奈川県":[200,.5], "大阪府":[0,-.5], "愛知県":[-2200,.1], "埼玉県":[200,-.4], "千葉県":[-2300,0], "兵庫県":[0,-.5], "福岡県":[-100,.5],"北海道":[0,.5], "静岡県":[0,.5], "茨城県":[1200,0], "京都府":[-200,-.4], "広島県":[0,+.5], "奈良県":[0,-.5],"佐賀県":[5900,-.4],"鹿児島県":[4900,.3],"宮崎県":[6400,.5], "山形県":[4000,.5],"熊本県":[2500,.4],"新潟県":[1800,.4], "徳島県":[0,-.5], "鳥取県":[0,-.5], "高知県":[2000,-.4], "山梨県":[7000,-.5]}
+for lang in langs: 
+    fig, ax = cb.handlers()
+    if lang =='en':
+        cb.set_yLabel(ax, yLabel=r' million people', currency=r'')
+    if lang =='jp':
+        cb.set_yLabel(ax, yLabel=r'百万人', currency=r'')   
+    ax.set_yticks([0,5,10,15,20])
+    ax.set_ylim([0,1.55*10])
+    ax.set_xlim([-11000,21000])
+    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
+    cb.set_yTickLabels(ax)
+    # ax.set_title(subtitles[lang], x=0., y=1.05, fontsize=14,ha='left',va='bottom',wrap=True)
+    # fig.suptitle(titles[lang], x=0,y=1.2, fontsize=18,ha='left',va='bottom', transform=ax.transAxes, wrap=True)
+    # ax.set_axisbelow(True)
+    ax.set_xlabel(xlabels[lang],color='black')
+    #ax.set_ylabel(ylabels[lang],color='black')
+    ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
+    #ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
+
+
+
+    deltas_jp = {"東京都":[0,-.5], "神奈川県":[200,.5], "大阪府":[0,-.5], "愛知県":[-2200,.2], "埼玉県":[200,-.4], "千葉県":[-2000,0], "兵庫県":[0,-.5], "福岡県":[-100,.5],"北海道":[0,-.5], "静岡県":[0,.5], "茨城県":[900,0], "京都府":[-1100,-.3], "広島県":[0,+.5], "奈良県":[-1700,0],"佐賀県":[5900,-.4],"鹿児島県":[4900,0],"宮崎県":[5900,.5], "山形県":[4000,.5],"熊本県":[1500,.5],"新潟県":[1200,.55], "徳島県":[0,-.5], "高知県":[2000,-.5], "山梨県":[7000,-.5]}
+    deltas_en = {"東京都":[0,-.5], "神奈川県":[200,.5], "大阪府":[0,-.5], "愛知県":[-2200,.1], "埼玉県":[200,-.4], "千葉県":[-2300,0], "兵庫県":[0,-.5], "福岡県":[-100,.5],"北海道":[0,.5], "静岡県":[0,.5], "茨城県":[1200,0], "京都府":[-200,-.4], "広島県":[0,+.5], "奈良県":[0,-.5],"佐賀県":[5900,-.4],"鹿児島県":[4900,.3],"宮崎県":[6400,.5], "山形県":[4000,.5],"熊本県":[2500,.4],"新潟県":[1800,.4], "徳島県":[0,-.5],  "高知県":[2000,-.4], "山梨県":[7000,-.5]}
     for prefecture in fn_pop_pref_df['prefecture'].unique(): 
 
         xs = fn_pop_pref_df.loc[(fn_pop_pref_df['prefecture']==prefecture) &(fn_pop_pref_df['year'].isin(year))]['profitperperson'].values
@@ -415,14 +442,12 @@ for lang in langs:
             else:
                 label = pref_names_df.loc[pref_names_df['prefecture']==prefecture, 'prefecture-reading'].iloc[0]
                 label = label.replace('ou','o').replace('oo','o').title()
-            ax.text(np.mean(xs)+delta[0],np.mean(ys)+delta[1],label, fontsize=8, ha='center',va='center')
+            ax.text(np.mean(xs)+delta[0],np.mean(ys)+delta[1],label, fontsize=8, ha='center',va='center',color=cb.grey)
         
         if prefecture == '東京都':
             ax.text(xs[0],ys[0]+.15,year[0], fontsize=8, ha='center',va='bottom')
             ax.text(xs[1]+300,ys[1]-.2,year[1], fontsize=8, ha='center',va='top')
 
-    ax.set_ylim([0,1.41*10])
-    ax.set_xlim([-10000,21000])
     for suffix in output_filetypes:
         fig.savefig(PLOT_FOLDER+'population_vs_profitperperson_'+lang+'.'+suffix, transparent=True,bbox_inches="tight")
     plt.close('all')
@@ -430,10 +455,9 @@ for lang in langs:
 shutil.copy(PLOT_FOLDER+'population_vs_profitperperson_en.pdf',EXTRA_PLOT_FOLDER)
 shutil.copy(PLOT_FOLDER+'population_vs_profitperperson_jp.pdf',EXTRA_PLOT_FOLDER)
 
+
 import plotly.express as px
 import plotly.graph_objects as go
-
-
 fig = px.line(fn_pop_pref_df.loc[furusato_pref_df['year'].isin(year)], y='total-pop',x='profitperperson', color='prefecture',hover_data=['prefecture', 'year'],markers=True)
 # fig = px.scatter(furusato_pref_sum_df, x='donations',y='netgainminusdeductions', color='prefecture',hover_data=['prefecture'])
 fig.write_html(PLOT_FOLDER+'/population_vs_profitperperson.html')
@@ -446,9 +470,9 @@ plt.close('all')
 
 # year = 2021
 
-# title_strings = {'en':r"\textbf{Winners and losers}", 
+# titles = {'en':r"\textbf{Winners and losers}", 
 # 'jp':r"\textbf{都道府県の間に、利益格差が広がっている}"}
-# subtitle_strings = {'en':r"Ranked profit per capita ", 
+# subtitles = {'en':r"Ranked profit per capita ", 
 # 'jp':str(year) + r"各県の人口と一人当たり純利益の進化"}
 
 # ylabels = {'en':r'Profit per capita (\textyen/person)', 
@@ -460,8 +484,8 @@ plt.close('all')
 
 # for lang in langs: 
 #     fig, ax = init_plotting(style='nyt')
-#     ax.set_title(subtitle_strings[lang], x=0., y=1.05, fontsize=14,ha='left',va='bottom',wrap=True)
-#     fig.suptitle(title_strings[lang], x=0,y=1.2, fontsize=18,ha='left',va='bottom', transform=ax.transAxes, wrap=True)
+#     ax.set_title(subtitles[lang], x=0., y=1.05, fontsize=14,ha='left',va='bottom',wrap=True)
+#     fig.suptitle(titles[lang], x=0,y=1.2, fontsize=18,ha='left',va='bottom', transform=ax.transAxes, wrap=True)
 #     ax.set_axisbelow(True)
 #     ax.set_ylabel(ylabels[lang])
 #     ax.get_xaxis().set_visible(False)
