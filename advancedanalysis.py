@@ -16,10 +16,7 @@ import plotly.graph_objects as go
 import shutil
 from matplotlib.ticker import FuncFormatter,StrMethodFormatter
 
-from japandata.population.data import local_pop_df, prefecture_pop_df
-from japandata.furusatonouzei.data import furusato_df, furusato_pref_df, furusato_rough_df
-from japandata.maps.data import load_map
-from japandata.indices.data import local_ind_df, pref_ind_df, prefmean_ind_df
+from data import local_df, pref_df, annual_df, rough_df, rough_annual_df, local_df_no23, rough_df_no23
 
 PLOT_FOLDER = os.path.join(os.getcwd(),'advancedgraphics/')
 EXTRA_PLOT_FOLDER = './furusato-private/draft/figures/'
@@ -33,74 +30,7 @@ os.makedirs(MAP_FOLDER, exist_ok=True)
 oku = 10**8
 hyakuman = 10**6
 
-cb = CircusBoy(baseFont=['Helvetica','Hiragino Maru Gothic Pro'],titleFont=['Helvetica','Hiragino Maru Gothic Pro'],textFont=['Helvetica','Hiragino Maru Gothic Pro'], fontsize=12,figsize=(6,4))
-
-###################################
-##### Merging pop data over years #
-###################################
-year_clone_df = local_pop_df.loc[local_pop_df['year'] == 2020].copy()
-year_clone_df['year'] = 2021
-local_pop_df = pd.concat([local_pop_df, year_clone_df])
-year_clone_df = prefecture_pop_df.loc[prefecture_pop_df['year'] == 2020].copy()
-year_clone_df['year'] = 2021
-prefecture_pop_df = pd.concat([prefecture_pop_df, year_clone_df])
-
-fn_pop_df = pd.merge(furusato_df, local_pop_df, on=["code", "year", "prefecture"],validate='one_to_one')
-furusato_df.loc[~furusato_df['code'].isin(fn_pop_df['code']) & ~(furusato_df['city']=='prefecture')]
-fn_pop_pref_df = pd.merge(furusato_pref_df, prefecture_pop_df, on=["year","prefecture"],validate='one_to_one')
-
-############################################################################
-#### Merging with economic data  ###########################
-############################################################################
-year_clone_df = local_ind_df.loc[local_ind_df['year'] == 2020].copy()
-year_clone_df['year'] = 2021
-local_ind_df = pd.concat([local_ind_df, year_clone_df])
-year_clone_df = prefmean_ind_df.loc[prefmean_ind_df['year'] == 2020].copy()
-year_clone_df['year'] = 2021
-prefmean_ind_df = pd.concat([prefmean_ind_df, year_clone_df])
-
-fn_pop_ind_df = pd.merge(fn_pop_df, local_ind_df, on=["code", "year", "prefecture"],validate='one_to_one')
-
-## Make sure only the prefectures have no counterpart
-#fn_pop_df.loc[~fn_pop_df['code'].isin(fn_ind_df['code']) & ~(fn_pop_df['city_x']=='prefecture')]
-
-fn_pop_ind_pref_df = pd.merge(fn_pop_pref_df, prefmean_ind_df, on=["year","prefecture"],validate='one_to_one')
-#fn_pop_ind_pref_df = pd.merge(fn_pop_pref_df, pref_ind_df, on=["year","prefecture"],validate='one_to_one')
-
-##################################
-#### Summing over years ##########
-##################################
-
-local_sum_df = fn_pop_ind_df.groupby(['code','prefecturecity','prefecture', 'city_x']).sum().reset_index().drop('year', axis=1)
-pref_sum_df = fn_pop_ind_pref_df.groupby(['prefecture']).sum().reset_index().drop('year', axis=1)
-
-######################################
-### Aliasing ####
-######################################
-
-local_df = fn_pop_ind_df
-pref_df = fn_pop_ind_pref_df
-
-#######################################
-###### Computing some useful things ###
-#######################################
-pd.options.mode.chained_assignment = None
-local_df['profit-per-person'] = local_df.apply(lambda row: row['netgainminusdeductions']/row['total-pop'],axis=1)
-totalbyyear = local_df.groupby('year').sum()['donations']
-local_df['donations-fraction'] = local_df.apply(lambda row: row['donations']/totalbyyear[row['year']],axis=1)
-local_df['donations-per-person'] = local_df.apply(lambda row: row['donations']/row['total-pop'],axis=1)
-
-pref_df['profit-per-person'] = pref_df.apply(lambda row: row['netgainminusdeductions']/row['total-pop'],axis=1)
-totalbyyear = pref_df.groupby('year').sum()['donations']
-pref_df['donations-fraction'] = pref_df.apply(lambda row: row['donations']/totalbyyear[row['year']],axis=1)
-pref_df['donations-per-person'] = pref_df.apply(lambda row: row['donations']/row['total-pop'],axis=1)
-
-#######################
-### Removing Tokyo ####
-#######################
-
-tokyo23codes = [str(13101 + i) for i in range(23)]
-local_df_no23 = local_df.drop(local_df.loc[local_df['code'].isin(tokyo23codes)].index)
+cb = CircusBoy(baseFont='Helvetica', cjkFont   ='Hiragino Maru Gothic Pro',titleFont='Helvetica',textFont='Helvetica', fontsize=12,figsize=(6,4))
 
 ##############################
 #### Output prefecture table  ###########
@@ -133,14 +63,14 @@ fig, ax = cb.handlers()
 title = r"Population vs Profit"
 #subtitle = r"(1m people)"
 #ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+cb.set_titleSubtitle(ax, title)
 year = [2020]
 ax.scatter(local_df.loc[local_df['year'].isin(year)]['total-pop'],local_df.loc[local_df['year'].isin(year)]['netgainminusdeductions'])
 for suffix in output_filetypes:
     fig.savefig(PLOT_FOLDER+'profit_vs_pop.'+suffix, transparent=True)
 plt.close('all')
 
-fig = px.scatter(local_df.loc[local_df['year'].isin(year)], x='total-pop',y='netgainminusdeductions', color='prefecture', hover_data=['code','prefecture', 'city_x'])
+fig = px.scatter(local_df.loc[local_df['year'].isin(year)], x='total-pop',y='netgainminusdeductions', color='prefecture', hover_data=['code','prefecture', 'city'])
 fig.write_html(PLOT_FOLDER+'/profit_vs_pop.html')
 plt.close('all')
 
@@ -159,7 +89,7 @@ for suffix in output_filetypes:
     fig.savefig(PLOT_FOLDER+'profit_vs_popchange.'+suffix, transparent=True)
 plt.close('all')
 
-fig = px.scatter(local_df.loc[local_df['year'].isin(year)], x='in-minus-out-rate',y='netgainminusdeductions', color='prefecture', hover_data=['code','prefecture', 'city_x'])
+fig = px.scatter(local_df.loc[local_df['year'].isin(year)], x='in-minus-out-rate',y='netgainminusdeductions', color='prefecture', hover_data=['code','prefecture', 'city'])
 fig.write_html(PLOT_FOLDER+'/profit_vs_popchange.html')
 plt.close('all')
 
@@ -178,7 +108,7 @@ for suffix in output_filetypes:
     fig.savefig(PLOT_FOLDER+'profit_vs_popchange.'+suffix, transparent=True)
 plt.close('all')
 
-fig = px.scatter(local_df.loc[local_df['year'].isin(year)], x='in-minus-out-rate',y='donations', color='prefecture', hover_data=['code','prefecture', 'city_x'])
+fig = px.scatter(local_df.loc[local_df['year'].isin(year)], x='in-minus-out-rate',y='donations', color='prefecture', hover_data=['code','prefecture', 'city'])
 fig.write_html(PLOT_FOLDER+'/profit_vs_popchange.html')
 plt.close('all')
 
@@ -197,7 +127,7 @@ for suffix in output_filetypes:
     fig.savefig(PLOT_FOLDER+'donations_vs_strength.'+suffix, transparent=True)
 plt.close('all')
 
-fig = px.scatter(local_df_no23.loc[local_df_no23['year'].isin(year)], x='economic-strength-index',y='donations', color='prefecture', hover_data=['code','prefecture', 'city_x'])
+fig = px.scatter(local_df_no23.loc[local_df_no23['year'].isin(year)], x='economic-strength-index',y='donations', color='prefecture', hover_data=['code','prefecture', 'city'])
 fig.write_html(PLOT_FOLDER+'/donations_vs_strength.html')
 plt.close('all')
 
@@ -216,7 +146,7 @@ for suffix in output_filetypes:
     fig.savefig(PLOT_FOLDER+'profit_vs_strength.'+suffix, transparent=True)
 plt.close('all')
 
-fig = px.scatter(local_df_no23.loc[local_df_no23['year'].isin(year)], x='economic-strength-index',y='netgainminusdeductions', color='prefecture', hover_data=['code','prefecture', 'city_x'])
+fig = px.scatter(local_df_no23.loc[local_df_no23['year'].isin(year)], x='economic-strength-index',y='netgainminusdeductions', color='prefecture', hover_data=['code','prefecture', 'city'])
 fig.write_html(PLOT_FOLDER+'/profit_vs_strength.html')
 plt.close('all')
 
@@ -230,12 +160,12 @@ title = r"Donations vs Strength"
 #ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
 fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 year = [2017]
-ax.scatter(fn_pop_ind_pref_df.loc[fn_pop_ind_pref_df['year'].isin(year)]['economic-strength-index'],fn_pop_ind_pref_df.loc[fn_pop_ind_pref_df['year'].isin(year)]['donations'])
+ax.scatter(pref_df.loc[pref_df['year'].isin(year)]['economic-strength-index'],pref_df.loc[pref_df['year'].isin(year)]['donations'])
 for suffix in output_filetypes:
     fig.savefig(PLOT_FOLDER+'donations_vs_strength_pref.'+suffix, transparent=True)
 plt.close('all')
 
-fig = px.scatter(fn_pop_ind_pref_df.loc[fn_pop_ind_pref_df['year'].isin(year)], x='economic-strength-index',y='donations', color='prefecture', hover_data=['prefecture'])
+fig = px.scatter(pref_df.loc[pref_df['year'].isin(year)], x='economic-strength-index',y='donations', color='prefecture', hover_data=['prefecture'])
 fig.write_html(PLOT_FOLDER+'/donations_vs_strength_pref.html')
 plt.close('all')
 
@@ -249,12 +179,12 @@ title = r"Profit vs Strength"
 #ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
 fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
 year = [2020]
-ax.scatter(fn_pop_ind_pref_df.loc[fn_pop_ind_pref_df['year'].isin(year)]['economic-strength-index'],fn_pop_ind_pref_df.loc[fn_pop_ind_pref_df['year'].isin(year)]['netgainminusdeductions'])
+ax.scatter(pref_df.loc[pref_df['year'].isin(year)]['economic-strength-index'],pref_df.loc[pref_df['year'].isin(year)]['netgainminusdeductions'])
 for suffix in output_filetypes:
     fig.savefig(PLOT_FOLDER+'profit_vs_strength.'+suffix, transparent=True)
 plt.close('all')
 
-fig = px.scatter(fn_pop_ind_pref_df.loc[fn_pop_ind_pref_df['year'].isin(year)], x='economic-strength-index',y='netgainminusdeductions', color='prefecture', hover_data=['prefecture'])
+fig = px.scatter(pref_df.loc[pref_df['year'].isin(year)], x='economic-strength-index',y='netgainminusdeductions', color='prefecture', hover_data=['prefecture'])
 fig.write_html(PLOT_FOLDER+'/profit_vs_strength_pref.html')
 plt.close('all')
 
@@ -348,12 +278,6 @@ plt.close('all')
 #### STRENGTH OF TOP N DONATIONS ##
 ###################################
 
-fn_rough_pop_df = pd.merge(furusato_rough_df, local_pop_df, on=["code", "year", "prefecture"],validate='one_to_one')
-furusato_rough_df.loc[~furusato_rough_df['code'].isin(fn_rough_pop_df['code']) & ~(furusato_rough_df['city']=='prefecture')]
-
-fn_rough_ind_df = pd.merge(fn_rough_pop_df, local_ind_df, on=["code", "year", "prefecture"],validate='one_to_one')
-fn_rough_ind_df_no23 =  fn_rough_ind_df.drop(fn_rough_ind_df.loc[fn_rough_ind_df['code'].isin(tokyo23codes)].index)
-
 topN = 20
 
 langs = ['en','jp']
@@ -378,22 +302,23 @@ for lang in langs:
     names_list = []
     topN_economic_list=[]
     all_economic_list = []
-    for i, year in enumerate(fn_rough_ind_df.year.unique()):
+    for i, year in enumerate(rough_df.year.unique()):
         print(year)
-        inds = np.argsort(fn_rough_ind_df.loc[fn_rough_ind_df['year']==year,'donations'].values)[::-1]
-        names_list.append(fn_rough_ind_df.loc[fn_rough_ind_df['year']==year,'city'].iloc[inds[0:topN]].values)
-        topN_economic_list.append(fn_rough_ind_df.loc[fn_rough_ind_df['year']==year,'economic-strength-index'].iloc[inds[0:topN]].values)
-        all_economic_list.append(fn_rough_ind_df_no23.loc[fn_rough_ind_df_no23['year']==year,'economic-strength-index'])
+        inds = np.argsort(rough_df.loc[rough_df['year']==year,'donations'].values)[::-1]
+        names_list.append(rough_df.loc[rough_df['year']==year,'city'].iloc[inds[0:topN]].values)
+        topN_economic_list.append(rough_df.loc[rough_df['year']==year,'economic-strength-index'].iloc[inds[0:topN]].values)
+        all_economic_list.append(rough_df_no23.loc[rough_df_no23['year']==year,'economic-strength-index'])
         
-    ax.plot(fn_rough_ind_df.year.unique(), [np.mean(topN_economic_list[i]) for i in range(len(topN_economic_list))], color=samcolors.nice_colors(3))
-    ax.plot(fn_rough_ind_df.year.unique(),  [np.quantile(all_economic_list[i],.5) for i in range(len(all_economic_list))], color=samcolors.nice_colors(1))
-    ax.plot(fn_rough_ind_df.year.unique(),  [np.quantile(all_economic_list[i],.25) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0.5))
-    #ax.plot(fn_rough_ind_df.year.unique(),  [np.quantile(all_economic_list[i],.01) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0))
-    ax.plot(fn_rough_ind_df.year.unique(),  [np.mean(np.sort(all_economic_list[i])[0:20]) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0))
+    ax.plot(rough_df.year.unique(), [np.mean(topN_economic_list[i]) for i in range(len(topN_economic_list))], color=samcolors.nice_colors(3))
+    ax.plot(rough_df.year.unique(),  [np.quantile(all_economic_list[i],.5) for i in range(len(all_economic_list))], color=samcolors.nice_colors(1))
+    ax.plot(rough_df.year.unique(),  [np.quantile(all_economic_list[i],.25) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0.5))
+    #ax.plot(rough_df.year.unique(),  [np.quantile(all_economic_list[i],.01) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0))
+    ax.plot(rough_df.year.unique(),  [np.mean(np.sort(all_economic_list[i])[0:20]) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0))
 
-    ax.set_xlim(min(furusato_rough_df.year)-.8,max(furusato_rough_df.year)+.2)
+    ax.set_xlim(min(rough_df.year)-.8,max(rough_df.year)+.2)
     ax.set_xticks([2009,2011,2013,2015,2017,2019,2021])
 
+    ## TODO THE MEDIANS AND PERCENTILES ARE ALL TOKYO-FREE
     if lang == 'en':
         ax.text(2008, .5, colorstring+r'\textbf{\textcolor{yellow}{All-Japan median}}', va='bottom', ha='left', fontsize=14)
         ax.text(2008, .29, colorstring+r'\textbf{\textcolor{orange}{25th percentile: One quarter lie below this line}}', va='bottom', ha='left', fontsize=14)
@@ -411,6 +336,95 @@ for lang in langs:
     shutil.copy(PLOT_FOLDER+'topN-strength_'+lang+'.pdf',EXTRA_PLOT_FOLDER)
 
     plt.close('all')
+
+
+##############################
+#### PER PERSON PROFIT-LOSS ##
+##############################
+
+year = [2016,2021]
+
+titles = {'en':r"\textbf{Growing gap between winners and losers}", 
+'jp':r"\textbf{都道府県の間に、利益格差が広がっている}"}
+subtitles = {'en':r"Population and per-capita profit, " + str(year[0]) + r" to " + str(year[1]), 
+'jp':r"各県の人口と一人当たり純利益の進化、" + str(year[0]) + r"から" + str(year[1])}
+xlabels = {'en':r'Profit per capita  (\textyen/person)', 
+'jp':r'一人当たり純利益 (円／人）'} 
+#ylabels = {'en':'Population ', 
+#'jp':r'人口'} 
+langs = ['en','jp']
+
+cb = CircusBoy(baseFont=['Helvetica','Hiragino Maru Gothic Pro'],titleFont=['Helvetica','Hiragino Maru Gothic Pro'],textFont=['Helvetica','Hiragino Maru Gothic Pro'], fontsize=12,figsize=(6,4), grey=[0.55,0.55,0.55])
+
+for lang in langs: 
+    fig, ax = cb.handlers()
+    if lang =='en':
+        cb.set_yLabel(ax, yLabel=r' million people', currency=r'')
+    if lang =='jp':
+        cb.set_yLabel(ax, yLabel=r'百万人', currency=r'')   
+    ax.set_yticks([0,5,10,15,20])
+    ax.set_ylim([0,1.55*10])
+    ax.set_xlim([-11000,21000])
+    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
+    cb.set_yTickLabels(ax)
+
+    ax.set_xlabel(xlabels[lang],color='black')
+    #ax.set_ylabel(ylabels[lang],color='black')
+    ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
+    #ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
+
+
+
+    deltas_jp = {"東京都":[0,-.5], "神奈川県":[200,.5], "大阪府":[0,-.5], "愛知県":[-2200,.2], "埼玉県":[200,-.4], "千葉県":[-2000,0], "兵庫県":[0,-.5], "福岡県":[-100,.5],"北海道":[0,-.5], "静岡県":[0,.5], "茨城県":[900,0], "京都府":[-1100,-.3], "広島県":[0,+.5], "奈良県":[-1700,0],"佐賀県":[5900,-.4],"鹿児島県":[4900,0],"宮崎県":[5900,.5], "山形県":[4000,.5],"熊本県":[1500,.5],"新潟県":[1200,.55], "徳島県":[0,-.5], "高知県":[2000,-.5], "山梨県":[7000,-.5]}
+    deltas_en = {"東京都":[0,-.5], "神奈川県":[200,.5], "大阪府":[0,-.5], "愛知県":[-2200,.1], "埼玉県":[200,-.4], "千葉県":[-2300,0], "兵庫県":[0,-.5], "福岡県":[-100,.5],"北海道":[0,.5], "静岡県":[0,.5], "茨城県":[1200,0], "京都府":[-200,-.4], "広島県":[0,+.5], "奈良県":[0,-.5],"佐賀県":[5900,-.4],"鹿児島県":[4900,.3],"宮崎県":[6400,.5], "山形県":[4000,.5],"熊本県":[2500,.4],"新潟県":[1800,.4], "徳島県":[0,-.5],  "高知県":[2000,-.4], "山梨県":[7000,-.5]}
+    for prefecture in fn_pop_pref_df['prefecture'].unique(): 
+
+        xs = fn_pop_pref_df.loc[(fn_pop_pref_df['prefecture']==prefecture) &(fn_pop_pref_df['year'].isin(year))]['profitperperson'].values
+        ys = fn_pop_pref_df.loc[(fn_pop_pref_df['prefecture']==prefecture) & (fn_pop_pref_df['year'].isin(year))]['total-pop'].values / 10**6
+        #ax.plot(fn_pop_pref_df.loc[(fn_pop_pref_df['prefecture']==prefecture) &(fn_pop_pref_df['year'].isin(year))]['profitperperson'],fn_pop_pref_df.loc[(fn_pop_pref_df['prefecture']==prefecture) & (fn_pop_pref_df['year'].isin(year))]['total-pop'])
+        if xs[1]<0:
+            color = samcolors.nice_colors(3)
+        else: 
+            color = samcolors.nice_colors(0)
+        ax.annotate("", xy=(xs[0], ys[0]), xytext=(xs[1], ys[1]),
+                arrowprops=dict(arrowstyle="<-",shrinkA=0, shrinkB=0,color=color),fontsize=10)
+
+        # try: va = vas[prefecture]
+        # except KeyError: va = 'center'
+        # try: ha = has[prefecture]
+        # except KeyError: ha = 'center'
+        if lang == 'jp':
+            deltas = deltas_jp
+        else:
+            deltas = deltas_en
+        try: delta = deltas[prefecture]
+        except KeyError: delta = [0,0]
+
+        if prefecture in deltas.keys():
+            if lang == 'jp':
+                label = prefecture.strip("県").strip("都").strip("府")
+            else:
+                label = pref_names_df.loc[pref_names_df['prefecture']==prefecture, 'prefecture-reading'].iloc[0]
+                label = label.replace('ou','o').replace('oo','o').title()
+            ax.text(np.mean(xs)+delta[0],np.mean(ys)+delta[1],label, fontsize=8, ha='center',va='center',color=cb.grey)
+        
+        if prefecture == '東京都':
+            ax.text(xs[0],ys[0]+.15,year[0], fontsize=8, ha='center',va='bottom')
+            ax.text(xs[1]+300,ys[1]-.2,year[1], fontsize=8, ha='center',va='top')
+
+    for suffix in output_filetypes:
+        fig.savefig(PLOT_FOLDER+'population_vs_profitperperson_'+lang+'.'+suffix, transparent=True,bbox_inches="tight")
+    plt.close('all')
+
+shutil.copy(PLOT_FOLDER+'population_vs_profitperperson_en.pdf',EXTRA_PLOT_FOLDER)
+shutil.copy(PLOT_FOLDER+'population_vs_profitperperson_jp.pdf',EXTRA_PLOT_FOLDER)
+
+import plotly.express as px
+import plotly.graph_objects as go
+fig = px.line(fn_pop_pref_df.loc[furusato_pref_df['year'].isin(year)], y='total-pop',x='profitperperson', color='prefecture',hover_data=['prefecture', 'year'],markers=True)
+# fig = px.scatter(furusato_pref_sum_df, x='donations',y='netgainminusdeductions', color='prefecture',hover_data=['prefecture'])
+fig.write_html(PLOT_FOLDER+'/population_vs_profitperperson.html')
+plt.close('all')
 
 # ##############################
 # #### DONATIONS AND BURDEN HISTOGRAM ##
