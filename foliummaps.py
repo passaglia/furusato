@@ -360,10 +360,10 @@ def make_pref(PREFECTURE):
 
     m.save(PLOT_FOLDER+PREFECTURE+"profit_map.html")
 
-for PREFECTURE in ['北海道','秋田県']:
-    make_pref(PREFECTURE)
-
-# for PREFECTURE in furusato_df["prefecture"].unique():
-#     print(PREFECTURE)
+# for PREFECTURE in ['北海道','秋田県']:
 #     make_pref(PREFECTURE)
+
+for PREFECTURE in pref_map_df["prefecture"].unique():
+    print(PREFECTURE)
+    make_pref(PREFECTURE)
 
