@@ -6,5 +6,5 @@ This repository contains the code used to support my analysis of the furusato no
 
 In addition to a host of usual python dependencies, running this code successfully requires:
 
-- [JapanData](https://github.com/passaglia/japandata): Provides access to the furusato nozei data as well as population and economic strength data for japanese prefectures and municipalities.
-- [samplot](https://github.com/passaglia/samplot): A set of matplotlib helper functions.
+- [JapanData](https://github.com/passaglia/japandata): Provides the furusato nozei data as well as population data, economic data, and geographic data. 
+- [samplot](https://github.com/passaglia/samplot): A plot styling library built on matplotlib.
