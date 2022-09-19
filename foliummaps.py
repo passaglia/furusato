@@ -9,7 +9,7 @@ from folium.features import GeoJsonTooltip
 import branca.colormap as cm
 import shutil
 
-from data import local_map_df, pref_map_df
+from data import local_map_df_loader, pref_map_df_loader
 
 PLOT_FOLDER = os.path.join(os.getcwd(),'foliummaps/')
 EXTRA_PLOT_FOLDER = './furusato-private/draft/figures/'
@@ -20,6 +20,12 @@ os.makedirs(PLOT_FOLDER, exist_ok=True)
 
 oku = 10**8
 hyakuman = 10**6
+
+################################
+#### Loading maps ###
+#################################
+pref_map_df = pref_map_df_loader()
+local_map_df = local_map_df_loader()
 
 ################################
 #### Restricting to one year ###

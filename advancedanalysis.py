@@ -16,11 +16,9 @@ from data import local_df, pref_df, annual_df, rough_df, rough_annual_df, local_
 PLOT_FOLDER = os.path.join(os.getcwd(),'advancedgraphics/')
 EXTRA_PLOT_FOLDER = './furusato-private/draft/figures/'
 
-MAP_FOLDER = os.path.join(PLOT_FOLDER,'maps/')
 output_filetypes = ['pdf']
 
 os.makedirs(PLOT_FOLDER, exist_ok=True)
-os.makedirs(MAP_FOLDER, exist_ok=True)
 
 oku = 10**8
 hyakuman = 10**6
@@ -661,3 +659,32 @@ plt.close('all')
 
 # shutil.copy(PLOT_FOLDER+'profitperperson_ordered_en.pdf',EXTRA_PLOT_FOLDER)
 # shutil.copy(PLOT_FOLDER+'profitperperson_ordered_jp.pdf',EXTRA_PLOT_FOLDER)
+
+
+# ##############################
+# #### PROFIT VS STRENGTH PER PREF   ####
+# ##############################
+
+# ## TODO: MAKE THIS LESS SHIT AND DO DONATIONS TOO
+
+# fig, ax = init_plotting(style='nyt')
+# title_string = r""
+# #subtitle_string = r"(1m people)"
+# #ax.set_title(subtitle_string, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+# fig.suptitle(title_string, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+# years = [2019]
+# #ax.scatter(local_df.loc[local_df['year'].isin(year)]['economic-strength-index'],local_df.loc[local_df['year'].isin(year)]['profitperperson'])
+# #ax.scatter(local_df.loc[local_df['year'].isin(year)]['economic-strength-index'],local_df.loc[local_df['year'].isin(year)]['netgainminusdeductions'])
+# ax.scatter(local_df.loc[local_df['year'].isin(years)]['economic-strength-index'],local_df.loc[local_df['year'].isin(years)]['donations-fraction'])
+# #ax.scatter(local_df.loc[local_df['year'].isin(year)]['economic-strength-index'],local_df.loc[local_df['year'].isin(year)]['donations'])
+
+# #ax.set_xlim([.2,1])
+# #ax.set_ylim([-5000,20000])
+# #ax.axhline(0,color='black', alpha=.5, ls='--')
+# for suffix in output_filetypes:
+#     fig.savefig(PLOT_FOLDER+PREFECTURE+'donationsfrac_vs_strength.'+suffix, transparent=True)
+# plt.close('all')
+
+# # fig = px.scatter(local_df.loc[local_df['year'].isin(year)], x='economic-strength-index',y='donations', color='prefecture', hover_data=['prefecture'])
+# # fig.write_html(PLOT_FOLDER+PREFECTURE+'profitperperson_vs_strength_pref.html')
+# # plt.close('all')

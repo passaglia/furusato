@@ -103,36 +103,40 @@ rough_df_no23 = rough_df.drop(rough_df.loc[rough_df['code'].isin(tokyo23codes)].
 ########################################################
 from japandata.maps.data import load_map
 
-map_df = pd.DataFrame()
-for year in fn_pop_ind_df['year'].unique():
-    map_df_year = load_map(year,level='local_dc')
-    
-    map_df_year = map_df_year.drop(['bureau', 'county', 'special'],axis=1)
-    map_df_year['year'] = year
-    map_df = pd.concat([map_df,map_df_year])
+def local_map_df_loader(quality='coarse'):
+    map_df = pd.DataFrame()
+    for year in fn_pop_ind_df['year'].unique():
+        map_df_year = load_map(year,level='local_dc',quality=quality)
+        
+        map_df_year = map_df_year.drop(['bureau', 'county', 'special'],axis=1)
+        map_df_year['year'] = year
+        map_df = pd.concat([map_df,map_df_year])
 
-map_df = map_df.drop(map_df.loc[~map_df['code'].isin(fn_pop_ind_df['code'])].index,axis=0)
-map_df=map_df.reset_index(drop=True)
+    map_df = map_df.drop(map_df.loc[~map_df['code'].isin(fn_pop_ind_df['code'])].index,axis=0)
+    map_df=map_df.reset_index(drop=True)
 
-local_map_df = pd.merge(local_df, map_df, on=["year","prefecture", "code"],how='left', suffixes=['','_map'])
-local_map_df= local_map_df.drop('city_map', axis=1)
-for index, row in local_map_df.iterrows():
-    if row.geometry==None:
-        local_map_df.at[index, 'geometry'] = map_df.loc[(map_df['code']==row.code) & (map_df['prefecture']==row.prefecture),'geometry'].values[0]
-    else:
-        pass
-assert(len(local_map_df) == len(local_df))
-local_map_df = gpd.GeoDataFrame(local_map_df)
+    local_map_df = pd.merge(local_df, map_df, on=["year","prefecture", "code"],how='left', suffixes=['','_map'])
+    local_map_df= local_map_df.drop('city_map', axis=1)
+    for index, row in local_map_df.iterrows():
+        if row.geometry==None:
+            local_map_df.at[index, 'geometry'] = map_df.loc[(map_df['code']==row.code) & (map_df['prefecture']==row.prefecture),'geometry'].values[0]
+        else:
+            pass
+    assert(len(local_map_df) == len(local_df))
+    local_map_df = gpd.GeoDataFrame(local_map_df)
+    return local_map_df
 
-map_df = pd.DataFrame()
-for year in fn_pop_ind_pref_df['year'].unique():
-    map_df_year = load_map(year,level='prefecture', quality='stylized')
-    map_df_year['year'] = year
-    map_df = pd.concat([map_df,map_df_year])
-map_df=map_df.reset_index(drop=True)
+def pref_map_df_loader(quality='stylized'):
+    map_df = pd.DataFrame()
+    for year in fn_pop_ind_pref_df['year'].unique():
+        map_df_year = load_map(year,level='prefecture', quality=quality)
+        map_df_year['year'] = year
+        map_df = pd.concat([map_df,map_df_year])
+    map_df=map_df.reset_index(drop=True)
 
-pref_map_df = pd.merge(pref_df, map_df, on=["year","prefecture"],validate='one_to_one', suffixes=['','_map'])
-pref_map_df = gpd.GeoDataFrame(pref_map_df)
+    pref_map_df = pd.merge(pref_df, map_df, on=["year","prefecture"],validate='one_to_one', suffixes=['','_map'])
+    pref_map_df = gpd.GeoDataFrame(pref_map_df)
+    return pref_map_df
 
 # # ##################################
 # # ### Saving for size estimate  ####
