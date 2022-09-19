@@ -1,36 +1,53 @@
+import os
+import pandas as pd
+import numpy as np
+import shutil
+import geopandas as gpd
+import matplotlib
+import matplotlib.pyplot as plt
+from samplot.utils import init_plotting
+from samplot.baseplot import BasePlot
+from samplot.circusboy import CircusBoy
+
+import samplot.colors as samcolors
+
+from data import local_map_df, pref_map_df
+
+PLOT_FOLDER = os.path.join(os.getcwd(),'matplotlibmaps/')
+EXTRA_PLOT_FOLDER = './furusato-private/draft/figures/'
+
+output_filetypes = ['pdf']
+
+os.makedirs(PLOT_FOLDER, exist_ok=True)
+
+hyakuman = 10**6
+
+year = 2021
 
 ##################################
 ### Matplotlib version -- pref ###
 ##################################
 
-#national_map_df = load_map(mapyear,level='japan', quality='stylized')
-df = pref_df.loc[furusato_df['year']==mapyear]
-#df = pref_sum_df 
+df = pref_map_df.loc[pref_map_df['year']==year]
 
-datacolumn= "profitperperson"
+datacolumn= "profit-per-person"
 scalingfactor = 1
 
-map_df[datacolumn] = 0
-for i in range(len(map_df)):
-    try: 
-        map_df.loc[i, datacolumn] =  (df.loc[df['prefecture'] == map_df.loc[i,'prefecture'],datacolumn].values[0]/scalingfactor)
-    except IndexError: 
-        print(map_df.loc[i,'prefecture'])
+df['dummy'] = df[datacolumn]/scalingfactor
 
 import shapely
 
-map_df.loc[map_df['prefecture'] == "沖縄県", 'geometry'] = map_df.loc[map_df['prefecture'] == "沖縄県", 'geometry'].affine_transform([1, 0, 0, 1, 6.5, 13])
+df.loc[df['prefecture'] == "沖縄県", 'geometry'] = df.loc[df['prefecture'] == "沖縄県", 'geometry'].affine_transform([1, 0, 0, 1, 6.5, 13])
 
 rotation_angle = -17
-rotation_origin = map_df[map_df.is_valid].unary_union.centroid
-map_df['geometry']=map_df['geometry'].rotate(rotation_angle,origin=rotation_origin)
-#national_map_df['geometry']=national_map_df['geometry'].rotate(rotation_angle,origin=rotation_origin)
+rotation_origin = df[df.is_valid].unary_union.centroid
+df['geometry']=df['geometry'].rotate(rotation_angle,origin=rotation_origin)
 
-#map_df = map_df.to_crs("EPSG:3395")
-map_df = map_df.to_crs("EPSG:30166")
+#df = df.to_crs("EPSG:3395")
+df = df.to_crs("EPSG:30166")
 
-titles = {'en':r"\textbf{Winning and losing prefectures}" + '\n' + r"\textbf{"+str(mapyear)+"}", 
-'jp':r"\textbf{儲かっている、損している都道府県}" + '\n' + r"\textbf{"+str(mapyear)+"}"}#都道府県での勝ち組と負け組
+titles = {'en':r"\textbf{Winning and losing prefectures}" + '\n' + r"\textbf{"+str(year)+"}", 
+'jp':r"\textbf{儲かっている、損している都道府県}" + '\n' + r"\textbf{"+str(year)+"}"}#都道府県での勝ち組と負け組
 labels = {'en':r'Profit per capita (\textyen/person)', 'jp':r'一人当たりのふるさと納税純利益（円／人）'}
 langs = ['en','jp']
 
@@ -48,9 +65,9 @@ for lang in langs:
     #cmap = ListedColormap([matplotlib.colors.to_hex(color) for color in rgbacolors])
     cmap, norm = matplotlib.colors.from_levels_and_colors(bins, rgbacolors, extend="neither")
 
-    ax = map_df.plot(column=datacolumn, ax=ax,  cmap=cmap, norm=norm,legend=False,lw=.05, edgecolor='#4341417c')#edgecolor='grey'#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
+    ax = df.plot(column=datacolumn, ax=ax,  cmap=cmap, norm=norm,legend=False,lw=.05, edgecolor='#4341417c')#edgecolor='grey'#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
     #national_map_df.plot(ax=ax,edgecolor=(0,0,0),facecolor="None",lw=.3)
-    #map_df.loc[map_df['prefecture'] == "沖縄県"].plot(ax=ax,edgecolor=(0,0,0),facecolor="None",lw=.3)#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
+    #df.loc[df['prefecture'] == "沖縄県"].plot(ax=ax,edgecolor=(0,0,0),facecolor="None",lw=.3)#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
     ax.set_xlim([-.75*10**6,.98*10**6])
     ax.set_ylim([-.28*10**6,.95*10**6])
 
@@ -84,8 +101,8 @@ for lang in langs:
 
     #https://medium.datadriveninvestor.com/creating-a-discrete-colorbar-with-custom-bin-sizes-in-matplotlib-50b0daf8dd46
 
-    # norm = TwoSlopeNorm(vmin=map_df[datacolumn].min(), vcenter=0, vmax=map_df[datacolumn].max())
-    # map_df.plot(column=datacolumn, ax=ax, norm=norm, cmap='coolwarm',legend=True)
+    # norm = TwoSlopeNorm(vmin=df[datacolumn].min(), vcenter=0, vmax=df[datacolumn].max())
+    # df.plot(column=datacolumn, ax=ax, norm=norm, cmap='coolwarm',legend=True)
 
     #https://stackoverflow.com/questions/36008648/colorbar-on-geopandas
 
@@ -101,34 +118,34 @@ for lang in langs:
 
     fig.savefig(PLOT_FOLDER+'prefecture-profit_' + lang + '.pdf',transparent=True,bbox_inches="tight")
     fig.savefig(PLOT_FOLDER+'prefecture-profit_' + lang + '.png',transparent=True,bbox_inches="tight")
-    fig.savefig(EXTRA_PLOT_FOLDER+'prefecture-profit_' +lang +'.pdf',bbox_inches="tight",transparent=True)
+    shutil.copy(PLOT_FOLDER+'prefecture-profit_'+lang+'.pdf',EXTRA_PLOT_FOLDER)
+
     plt.close('all')
 
-print(len(df.loc[df['profitperperson']<0]))
+print(len(df.loc[df['profit-per-person']<0]))
 
 ###########################
 ### Matplotlib version -- local ###
-###########################
+# ###########################
 
-mapyear = 2021
-map_df = load_map(mapyear,level='local_dc')
-df = furusato_df.loc[furusato_df['year']==mapyear]
+# map_df = load_map(mapyear,level='local_dc')
+# df = furusato_df.loc[furusato_df['year']==mapyear]
 
-datacolumn= "netgainminusdeductions"
-scalingfactor = hyakuman
+# datacolumn= "netgainminusdeductions"
+# scalingfactor = hyakuman
 
-map_df[datacolumn] = 0
-for i in range(len(map_df)):
-    try: 
-        map_df.loc[i, datacolumn] =  (df.loc[df['code'] == map_df.loc[i,'code'],datacolumn].values[0]/scalingfactor)
-    except IndexError: 
-        print(map_df.loc[i,'prefecture'])
+# map_df[datacolumn] = 0
+# for i in range(len(map_df)):
+#     try: 
+#         map_df.loc[i, datacolumn] =  (df.loc[df['code'] == map_df.loc[i,'code'],datacolumn].values[0]/scalingfactor)
+#     except IndexError: 
+#         print(map_df.loc[i,'prefecture'])
 
-fig, ax  = init_plotting()
-map_df.plot(column=datacolumn, ax=ax, rasterized=True)
-#fig.savefig(PLOT_FOLDER+'profit.pgf')
-fig.savefig(PLOT_FOLDER+'profit.pdf', dpi=1000)
-## or increase my tex memory using this
-## https://tex.stackexchange.com/questions/7953/how-to-expand-texs-main-memory-size-pgfplots-memory-overload
-## https://matplotlib.org/stable/tutorials/text/pgf.html
-plt.close('all')
+# fig, ax  = init_plotting()
+# map_df.plot(column=datacolumn, ax=ax, rasterized=True)
+# #fig.savefig(PLOT_FOLDER+'profit.pgf')
+# fig.savefig(PLOT_FOLDER+'profit.pdf', dpi=1000)
+# ## or increase my tex memory using this
+# ## https://tex.stackexchange.com/questions/7953/how-to-expand-texs-main-memory-size-pgfplots-memory-overload
+# ## https://matplotlib.org/stable/tutorials/text/pgf.html
+# plt.close('all')

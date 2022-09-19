@@ -1,19 +1,12 @@
 import os
 import pandas as pd
 import numpy as np
-import geopandas as gpd
 import matplotlib
 import matplotlib.pyplot as plt
 import folium
 from folium.features import GeoJsonTooltip
-from samplot.utils import init_plotting
-from samplot.baseplot import BasePlot
-from samplot.circusboy import CircusBoy
 
-import samplot.colors as samcolors
 import branca.colormap as cm
-import plotly.express as px
-import plotly.graph_objects as go
 import shutil
 
 from data import local_map_df, pref_map_df
