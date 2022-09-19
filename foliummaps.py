@@ -210,25 +210,15 @@ m.save(PLOT_FOLDER+"profit_map.html")
 ####################################################################
 #### PER PERSON PROFIT-LOSS MAP ####################################
 ####################################################################
-mapyear = 2021
-map_df = load_map(mapyear,level='prefecture')
-df = fn_pop_pref_df.loc[fn_pop_pref_df['year']==mapyear]
-#df = furusato_pref_sum_df
-
-datacolumn= "profitperperson"
+datacolumn= "profit-per-person"
 datacolumnalias = "Profit per person (円/person)"
 scalingfactor = 1
 
-map_df[datacolumn] = 0
-for i in range(len(map_df)):
-    try: 
-        map_df.loc[i, datacolumn] =  (df.loc[df['prefecture'] == map_df.loc[i,'prefecture'],datacolumn].values[0]/scalingfactor)
-    except IndexError: 
-        print(map_df.loc[i,'code'])
-        print(map_df.loc[i,'city'])
+df = pref_map_df_year.copy()
+df['dummy'] = df[datacolumn]/scalingfactor
 
 #largestdeviation = np.max(np.abs(map_df[datacolumn]))
-#largestdeviation = 20000
+largestdeviation = 20000
 
 rgbacolors = (matplotlib.cm.get_cmap('coolwarm')(np.linspace(0,1,11)))
 colormap = cm.LinearColormap( [matplotlib.colors.to_hex(color) for color in rgbacolors],
@@ -263,7 +253,6 @@ except AttributeError:
     pass
 
 m.save(PLOT_FOLDER+"profitperperson_prefecture_map.html")
-
 
 ######################################
 ### ORDERED PER PERSON PROFIT-LOSS  ##
