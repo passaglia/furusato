@@ -40,10 +40,6 @@ unhighlighted_style = {
 
 highlighted_style = unhighlighted_style | {'weight':4}
 
-center =  local_map_df_year[local_map_df_year.is_valid].unary_union.centroid.coords.xy
-#center = [[35.67], [139]]
-map_style = {'location':[center[1][0], center[0][0]], 'zoom_start':5, 'tiles':'None','attr':" "}
-
 def fillColor(colormap, feature):
     try: 
         return colormap(feature["properties"]['dummy']) 
@@ -60,6 +56,10 @@ tooltipstyle = """
         border-radius: 3px;
         box-shadow: 3px;
     """
+
+center =  local_map_df_year[local_map_df_year.is_valid].unary_union.centroid.coords.xy
+#center = [[35.67], [139]]
+map_style = {'location':[center[1][0], center[0][0]], 'zoom_start':5, 'tiles':'None','attr':" "}
 
 ##############################
 #### FOLIUM MAP OF DONATIONS #
@@ -247,79 +247,123 @@ except AttributeError:
 
 m.save(PLOT_FOLDER+"profitperperson_prefecture_map.html")
 
-######################################
-### ORDERED PER PERSON PROFIT-LOSS  ##
-######################################
+#############################
+### PREFECTURE LEVEL MAPS ###
+#############################
 
-# year = 2021
+def make_pref(PREFECTURE):
 
-# titles = {'en':r"\textbf{Winners and losers}", 
-# 'jp':r"\textbf{都道府県の間に、利益格差が広がっている}"}
-# subtitles = {'en':r"Ranked profit per capita ", 
-# 'jp':str(year) + r"各県の人口と一人当たり純利益の進化"}
+    print(PREFECTURE)
+    PLOT_FOLDER = os.path.join(os.getcwd(),'singlepref/'+PREFECTURE +'/')
+    os.makedirs(PLOT_FOLDER, exist_ok=True)
 
-# ylabels = {'en':r'Profit per capita (\textyen/person)', 
-# 'jp':r'人口 (百万人）'} 
-# langs = ['en','jp']
+    #### Restrict to one prefecture
 
-# datacolumn = 'profitperperson'
-# #datacolumn = 'netgainminusdeductions'
+    df = local_map_df_year.copy()
+    df = df.loc[df['prefecture']==PREFECTURE]
 
-# for lang in langs: 
-#     fig, ax = init_plotting(style='nyt')
-#     ax.set_title(subtitles[lang], x=0., y=1.05, fontsize=14,ha='left',va='bottom',wrap=True)
-#     fig.suptitle(titles[lang], x=0,y=1.2, fontsize=18,ha='left',va='bottom', transform=ax.transAxes, wrap=True)
-#     ax.set_axisbelow(True)
-#     ax.set_ylabel(ylabels[lang])
-#     ax.get_xaxis().set_visible(False)
-#     ax.spines['bottom'].set_visible(False)
+    ###### Computing extra field 
+    pd.options.mode.chained_assignment = None
+    totalbyyear = df.groupby('year').sum()['donations']
+    df['donations-fraction-prefecture'] = df.apply(lambda row: row['donations']/totalbyyear[row['year']],axis=1)
 
-#     #ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
-#     ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
+    ###### Extra styling
+    center =  df[df.is_valid].unary_union.centroid.coords.xy
+    #center = [[35.67], [139]]
+    map_style = {'location':[center[1][0], center[0][0]], 'zoom_start':9, 'tiles':'None','attr':" "}
+
+    #### Donations map
+
+    datacolumn= "donations"
+    datacolumnalias = "Total Donations (百万円)"
+    scalingfactor = hyakuman
+
+    df['dummy'] = df[datacolumn]/scalingfactor
+
+    largestdeviation = np.max(np.abs(df['dummy']))
+    #largestdeviation = 1000
+
+    rgbacolors = (matplotlib.cm.get_cmap('coolwarm')(np.linspace(0.5,1,11)))
+    colormap = cm.LinearColormap( [matplotlib.colors.to_hex(color) for color in rgbacolors],
+        vmin=0, vmax=largestdeviation
+    )
     
-#     winners = fn_pop_pref_df.loc[(fn_pop_pref_df['year']==year) & (fn_pop_pref_df[datacolumn]>0)].sort_values(datacolumn,ascending=False)
-#     losers = fn_pop_pref_df.loc[(fn_pop_pref_df['year']==year) & (fn_pop_pref_df[datacolumn]<0)].sort_values(datacolumn,ascending=False)
+    m = folium.Map(**map_style)
 
-#     barwin = ax.bar(np.arange(len(winners)),winners[datacolumn], color=samcolors.nice_colors(0))
-#     barlose = ax.bar(np.arange(len(winners),len(winners)+len(losers)),losers[datacolumn], color=samcolors.nice_colors(3))
+    tooltip = GeoJsonTooltip(
+        fields=["prefecture", "city", "city-reading", "code", "total-pop",  "netgainminusdeductions", "donations-fraction-prefecture", "economic-strength-index", "dummy"],
+        aliases=["Prefecture:", "City:", "City (en):","Code:", "Population:", "Net Gain Minus Deductions:", "Fraction of all donations in Prefecture:", "Economic Strength Index", datacolumnalias + ':'],
+        localize=True,
+        sticky=False,
+        labels=True,
+        style=tooltipstyle,
+        max_width=800,
+    )
 
-#     ax.bar_label(barwin, winners['prefecture'],padding=1, rotation=10,ha='left', va='bottom')
+    folium.GeoJson(df
+    ,name = 'dummy'
+    ,style_function=lambda feature: 
+    {'fillColor':fillColor(colormap, feature)} | unhighlighted_style
+    ,highlight_function=lambda feature: 
+    {'fillColor':fillColor(colormap, feature)} | highlighted_style
+    ,zoom_on_click=True
+    ,tooltip=tooltip
+    ).add_to(m)
 
-#     # for prefecture in fn_pop_pref_df['prefecture'].unique(): 
+    colormap.caption = datacolumnalias
+    colormap.add_to(m)
 
-#     #     xs = fn_pop_pref_df.loc[(fn_pop_pref_df['prefecture']==prefecture) &(fn_pop_pref_df['year'].isin(year))]['profitperperson'].values
-#     #     ys = fn_pop_pref_df.loc[(fn_pop_pref_df['prefecture']==prefecture) & (fn_pop_pref_df['year'].isin(year))]['total-pop'].values / 10**6
-#     #     #ax.plot(fn_pop_pref_df.loc[(fn_pop_pref_df['prefecture']==prefecture) &(fn_pop_pref_df['year'].isin(year))]['profitperperson'],fn_pop_pref_df.loc[(fn_pop_pref_df['prefecture']==prefecture) & (fn_pop_pref_df['year'].isin(year))]['total-pop'])
-#     #     if xs[1]<0:
-#     #         color = samcolors.nice_colors(3)
-#     #     else: 
-#     #         color = samcolors.nice_colors(0)
-#     #     ax.annotate("", xy=(xs[0], ys[0]), xytext=(xs[1], ys[1]),
-#     #             arrowprops=dict(arrowstyle="<-",shrinkA=0, shrinkB=0,color=color),fontsize=10)
+    m.save(PLOT_FOLDER+PREFECTURE+"donations_map.html")
 
-#     #     if lang == 'jp':
-#     #         deltas = deltas_jp
-#     #     else:
-#     #         deltas = deltas_en
-#     #     try: delta = deltas[prefecture]
-#     #     except KeyError: delta = [0,0]
+    ##############################
+    #### FOLIUM MAP OF PROFIT ###
+    ##############################
 
-#     #     if prefecture in deltas.keys():
-#     #         if lang == 'jp':
-#     #             label = prefecture.strip("県").strip("都").strip("府")
-#     #         else:
-#     #             label = pref_names_df.loc[pref_names_df['prefecture']==prefecture, 'prefecture-reading'].iloc[0]
-#     #             label = label.replace('ou','o').replace('oo','o').title()
-#     #         ax.text(np.mean(xs)+delta[0],np.mean(ys)+delta[1],label, fontsize=8, ha='center',va='center')
-        
-#     #     if prefecture == '東京都':
-#     #         ax.text(xs[0],ys[0]+.15,year[0], fontsize=8, ha='center',va='bottom')
-#     #         ax.text(xs[1]+300,ys[1]-.2,year[1], fontsize=8, ha='center',va='top')
+    datacolumn= "netgainminusdeductions"
+    datacolumnalias = "Net Gain Minus Deductions (百万円)"
+    scalingfactor = hyakuman
 
-#     # ax.set_ylim([0,1.41*10])
-#     for suffix in output_filetypes:
-#         fig.savefig(PLOT_FOLDER+'profitperperson_ordered_'+lang+'.'+suffix, transparent=True,bbox_inches="tight")
-#     plt.close('all')
+    df['dummy'] = df[datacolumn]/scalingfactor
 
-# shutil.copy(PLOT_FOLDER+'profitperperson_ordered_en.pdf',EXTRA_PLOT_FOLDER)
-# shutil.copy(PLOT_FOLDER+'profitperperson_ordered_jp.pdf',EXTRA_PLOT_FOLDER)
+    largestdeviation = np.max(np.abs(df['dummy']))
+    #largestdeviation = 2000
+
+    rgbacolors = (matplotlib.cm.get_cmap('coolwarm')(np.linspace(0,1,11)))
+    colormap = cm.LinearColormap( [matplotlib.colors.to_hex(color) for color in rgbacolors],
+        vmin=-largestdeviation, vmax=largestdeviation
+    )
+
+    m = folium.Map(**map_style)
+
+    tooltip = GeoJsonTooltip(
+        fields=["prefecture", "city", "city-reading", "code", "total-pop",  "donations", "donations-fraction-prefecture", "economic-strength-index", "dummy"],
+        aliases=["Prefecture:", "City:", "City (en):","Code:", "Population:", "Donations:", "Fraction of all donations in Prefecture:", "Economic Strength Index", datacolumnalias + ':'],
+        localize=True,
+        sticky=False,
+        labels=True,
+        style=tooltipstyle,
+        max_width=800,
+    )
+
+    folium.GeoJson(df
+    ,name = datacolumn
+    ,style_function=lambda feature: 
+    {'fillColor':fillColor(colormap,feature)} | unhighlighted_style
+    ,highlight_function=lambda feature: 
+    {'fillColor':fillColor(colormap, feature)} | highlighted_style
+    ,zoom_on_click=True
+    ,tooltip=tooltip
+    ).add_to(m)
+
+    colormap.caption = datacolumnalias
+    colormap.add_to(m)
+
+    m.save(PLOT_FOLDER+PREFECTURE+"profit_map.html")
+
+for PREFECTURE in ['北海道','秋田県']:
+    make_pref(PREFECTURE)
+
+# for PREFECTURE in furusato_df["prefecture"].unique():
+#     print(PREFECTURE)
+#     make_pref(PREFECTURE)
+

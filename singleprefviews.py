@@ -35,58 +35,6 @@ def make_pref(PREFECTURE):
     oku = 10**8
     hyakuman = 10**6
 
-    ###################################
-    ##### Merging pop data over years ##########
-    ###################################
-
-    from japandata.population.data import local_pop_df, prefecture_pop_df
-    from japandata.furusatonouzei.data import furusato_arr, furusato_df, furusato_pref_df
-    from japandata.maps.data import load_map
-    from japandata.indices.data import local_ind_df, pref_ind_df, prefmean_ind_df
-    from japandata.readings.data import names_df, pref_names_df
-
-    year_clone_df = local_pop_df.loc[local_pop_df['year'] == 2020].copy()
-    year_clone_df['year'] = 2021
-    local_pop_df = pd.concat([local_pop_df, year_clone_df])
-    year_clone_df = prefecture_pop_df.loc[prefecture_pop_df['year'] == 2020].copy()
-    year_clone_df['year'] = 2021
-    prefecture_pop_df = pd.concat([prefecture_pop_df, year_clone_df])
-
-    fn_pop_df = pd.merge(furusato_df, local_pop_df, on=["code", "year", "prefecture"],validate='one_to_one')
-    furusato_df.loc[~furusato_df['code'].isin(fn_pop_df['code']) & ~(furusato_df['city']=='prefecture')]
-    fn_pop_pref_df = pd.merge(furusato_pref_df, prefecture_pop_df, on=["year","prefecture"],validate='one_to_one')
-
-    ############################################################################
-    #### Merging with economic data over years  ###########################
-    ############################################################################
-    year_clone_df = local_ind_df.loc[local_ind_df['year'] == 2020].copy()
-    year_clone_df['year'] = 2021
-    local_ind_df = pd.concat([local_ind_df, year_clone_df])
-    year_clone_df = prefmean_ind_df.loc[prefmean_ind_df['year'] == 2020].copy()
-    year_clone_df['year'] = 2021
-    prefmean_ind_df = pd.concat([prefmean_ind_df, year_clone_df])
-
-    fn_pop_ind_df = pd.merge(fn_pop_df, local_ind_df, on=["code", "year", "prefecture"],validate='one_to_one')
-
-    ## Make sure only prefectures have no counterpart
-    #fn_pop_df.loc[~fn_pop_df['code'].isin(fn_ind_df['code']) & ~(fn_pop_df['city_x']=='prefecture')]
-
-    fn_pop_ind_pref_df = pd.merge(fn_pop_pref_df, prefmean_ind_df, on=["year","prefecture"],validate='one_to_one')
-    #fn_ind_pref_df = pd.merge(fn_pop_pref_df, pref_ind_df, on=["year","prefecture"],validate='one_to_one')
-
-    #########################################################
-    #### Merging with names data  ###########################
-    #########################################################
-
-    fn_pop_ind_df = pd.merge(fn_pop_ind_df, names_df.drop(['city','city-kana','prefecture-kana'],axis=1), on=["code", "prefecture"],validate='many_to_one')
-
-    ###################################
-    ##### Summing over years ##########
-    ###################################
-
-    # local_sum_df = fn_pop_ind_df.groupby(['code','prefecturecity','prefecture', 'city_x']).sum().reset_index().drop('year', axis=1)
-    # pref_sum_df = fn_pop_ind_pref_df.groupby(['prefecture']).sum().reset_index().drop('year', axis=1)
-
     ######################################
     ### Restricting to one prefecture ####
     ######################################
@@ -123,160 +71,129 @@ def make_pref(PREFECTURE):
     local_df_year = local_df_year.drop(['city','city_x','city_y'],axis=1)
     local_df_year= local_df_year.reset_index(drop=True)
 
-    ##############################################################
-    ### Restricting to one year and adding map  ###
-    ##############################################################
+    # ##############################
+    # #### FOLIUM MAP OF DONATIONS ###
+    # ##############################
 
-    map_df = load_map(year,level='local_dc')
-    map_df=map_df.loc[map_df['prefecture']==PREFECTURE]
-    map_df = map_df.reset_index(drop=True)
-    map_df = map_df.drop(map_df.loc[~map_df['code'].isin(local_df_year['code'])].index,axis=0)
-    map_df = map_df.reset_index(drop=True)
+    # datacolumn= "donations"
+    # datacolumnalias = "Total Donations (百万円)"
+    # scalingfactor = hyakuman
 
-    local_df_with_map = pd.merge(map_df, local_df_year, on=["code", "prefecture"],validate='one_to_one')
+    # df = local_df_with_map.copy()
+    # df['dummy'] = df[datacolumn]/scalingfactor
 
-    ##############################################################
-    ### For hokkaido and akita output some stats #################
-    ##############################################################
-    
+    # largestdeviation = np.max(np.abs(df['dummy']))
+    # #largestdeviation = 1000
 
+    # rgbacolors = (matplotlib.cm.get_cmap('coolwarm')(np.linspace(0.5,1,11)))
+    # colormap = cm.LinearColormap( [matplotlib.colors.to_hex(color) for color in rgbacolors],
+    #     vmin=0, vmax=largestdeviation
+    # )
 
+    # center =  df[df.is_valid].unary_union.centroid.coords.xy
+    # m = folium.Map(**{'location':[center[1][0], center[0][0]], 'zoom_start':9, 'tiles':'None','attr':" "})
 
-    ####################
-    ### Map Styling ###
-    ####################
+    # tooltip = GeoJsonTooltip(
+    #     fields=["prefecture", "city", "dummy"],
+    #     aliases=["Prefecture:", "City:", datacolumnalias + ':'],
+    #     localize=True,
+    #     sticky=False,
+    #     labels=True,
+    #     style="""
+    #         background-color: #F0EFEF;
+    #         border: 2px solid black;
+    #         border-radius: 3px;
+    #         box-shadow: 3px;
+    #     """,
+    #     max_width=800,
+    # )
 
-    unhighlighted_style = {
-    "color": "black",
-    "weight": 1,
-    "fillOpacity": 1,
-    }
+    # def fillColor(feature):
+    #     try: 
+    #         return colormap(feature["properties"]['dummy']) 
+    #     except ValueError: 
+    #         print(feature["properties"]["name"])
+    #         return 'black'
+    #     except KeyError:
+    #         print(feature["properties"]["name"])
+    #         return 'black'
 
-    highlighted_style = unhighlighted_style | {'weight':4}
+    # folium.GeoJson(df
+    # ,name = 'dummy'
+    # ,style_function=lambda feature: 
+    # {'fillColor':fillColor(feature)} | unhighlighted_style
+    # ,highlight_function=lambda feature: 
+    # {'fillColor':fillColor(feature)} | highlighted_style
+    # ,zoom_on_click=True
+    # ,tooltip=tooltip
+    # ).add_to(m)
 
-    ##############################
-    #### FOLIUM MAP OF DONATIONS ###
-    ##############################
+    # colormap.caption = datacolumnalias
+    # colormap.add_to(m)
 
-    datacolumn= "donations"
-    datacolumnalias = "Total Donations (百万円)"
-    scalingfactor = hyakuman
+    # m.save(PLOT_FOLDER+PREFECTURE+"donations_map.html")
 
-    df = local_df_with_map.copy()
-    df['dummy'] = df[datacolumn]/scalingfactor
+    # ##############################
+    # #### FOLIUM MAP OF PROFIT ###
+    # ##############################
 
-    largestdeviation = np.max(np.abs(df['dummy']))
-    #largestdeviation = 1000
+    # datacolumn= "netgainminusdeductions"
+    # datacolumnalias = "Net Gain Minus Deductions (百万円)"
+    # scalingfactor = hyakuman
 
-    rgbacolors = (matplotlib.cm.get_cmap('coolwarm')(np.linspace(0.5,1,11)))
-    colormap = cm.LinearColormap( [matplotlib.colors.to_hex(color) for color in rgbacolors],
-        vmin=0, vmax=largestdeviation
-    )
+    # df = local_df_with_map.copy()
+    # df['dummy'] = df[datacolumn]/scalingfactor
 
-    center =  df[df.is_valid].unary_union.centroid.coords.xy
-    m = folium.Map(**{'location':[center[1][0], center[0][0]], 'zoom_start':9, 'tiles':'None','attr':" "})
+    # largestdeviation = np.max(np.abs(df['dummy']))
+    # #largestdeviation = 2000
 
-    tooltip = GeoJsonTooltip(
-        fields=["prefecture", "city", "dummy"],
-        aliases=["Prefecture:", "City:", datacolumnalias + ':'],
-        localize=True,
-        sticky=False,
-        labels=True,
-        style="""
-            background-color: #F0EFEF;
-            border: 2px solid black;
-            border-radius: 3px;
-            box-shadow: 3px;
-        """,
-        max_width=800,
-    )
+    # rgbacolors = (matplotlib.cm.get_cmap('coolwarm')(np.linspace(0,1,11)))
+    # colormap = cm.LinearColormap( [matplotlib.colors.to_hex(color) for color in rgbacolors],
+    #     vmin=-largestdeviation, vmax=largestdeviation
+    # )
 
-    def fillColor(feature):
-        try: 
-            return colormap(feature["properties"]['dummy']) 
-        except ValueError: 
-            print(feature["properties"]["name"])
-            return 'black'
-        except KeyError:
-            print(feature["properties"]["name"])
-            return 'black'
+    # center =  df[df.is_valid].unary_union.centroid.coords.xy
+    # m = folium.Map(**{'location':[center[1][0], center[0][0]], 'zoom_start':9, 'tiles':'None','attr':" "})
 
-    folium.GeoJson(df
-    ,name = 'dummy'
-    ,style_function=lambda feature: 
-    {'fillColor':fillColor(feature)} | unhighlighted_style
-    ,highlight_function=lambda feature: 
-    {'fillColor':fillColor(feature)} | highlighted_style
-    ,zoom_on_click=True
-    ,tooltip=tooltip
-    ).add_to(m)
+    # tooltip = GeoJsonTooltip(
+    #     fields=["prefecture", "city", "city-reading", "code", "total-pop",  "donations", "donations-fraction", "economic-strength-index", "dummy"],
+    #     aliases=["Prefecture:", "City:", "City (en):","Code:", "Population:", "Donations:", "Fraction of all donations in Prefecture:", "Economic Strength Index", datacolumnalias + ':'],
+    #     localize=True,
+    #     sticky=False,
+    #     labels=True,
+    #     style="""
+    #         background-color: #F0EFEF;
+    #         border: 2px solid black;
+    #         border-radius: 3px;
+    #         box-shadow: 3px;
+    #     """,
+    #     max_width=800,
+    # )
 
-    colormap.caption = datacolumnalias
-    colormap.add_to(m)
+    # def fillColor(feature):
+    #     try: 
+    #         return colormap(feature["properties"]["dummy"]) 
+    #     except ValueError: 
+    #         print(feature["properties"]["name"])
+    #         return 'black'
+    #     except KeyError:
+    #         print(feature["properties"]["name"])
+    #         return 'black'
 
-    m.save(PLOT_FOLDER+PREFECTURE+"donations_map.html")
+    # folium.GeoJson(df
+    # ,name = datacolumn
+    # ,style_function=lambda feature: 
+    # {'fillColor':fillColor(feature)} | unhighlighted_style
+    # ,highlight_function=lambda feature: 
+    # {'fillColor':fillColor(feature)} | highlighted_style
+    # ,zoom_on_click=True
+    # ,tooltip=tooltip
+    # ).add_to(m)
 
-    ##############################
-    #### FOLIUM MAP OF PROFIT ###
-    ##############################
+    # colormap.caption = datacolumnalias
+    # colormap.add_to(m)
 
-    datacolumn= "netgainminusdeductions"
-    datacolumnalias = "Net Gain Minus Deductions (百万円)"
-    scalingfactor = hyakuman
-
-    df = local_df_with_map.copy()
-    df['dummy'] = df[datacolumn]/scalingfactor
-
-    largestdeviation = np.max(np.abs(df['dummy']))
-    #largestdeviation = 2000
-
-    rgbacolors = (matplotlib.cm.get_cmap('coolwarm')(np.linspace(0,1,11)))
-    colormap = cm.LinearColormap( [matplotlib.colors.to_hex(color) for color in rgbacolors],
-        vmin=-largestdeviation, vmax=largestdeviation
-    )
-
-    center =  df[df.is_valid].unary_union.centroid.coords.xy
-    m = folium.Map(**{'location':[center[1][0], center[0][0]], 'zoom_start':9, 'tiles':'None','attr':" "})
-
-    tooltip = GeoJsonTooltip(
-        fields=["prefecture", "city", "city-reading", "code", "total-pop",  "donations", "donations-fraction", "economic-strength-index", "dummy"],
-        aliases=["Prefecture:", "City:", "City (en):","Code:", "Population:", "Donations:", "Fraction of all donations in Prefecture:", "Economic Strength Index", datacolumnalias + ':'],
-        localize=True,
-        sticky=False,
-        labels=True,
-        style="""
-            background-color: #F0EFEF;
-            border: 2px solid black;
-            border-radius: 3px;
-            box-shadow: 3px;
-        """,
-        max_width=800,
-    )
-
-    def fillColor(feature):
-        try: 
-            return colormap(feature["properties"]["dummy"]) 
-        except ValueError: 
-            print(feature["properties"]["name"])
-            return 'black'
-        except KeyError:
-            print(feature["properties"]["name"])
-            return 'black'
-
-    folium.GeoJson(df
-    ,name = datacolumn
-    ,style_function=lambda feature: 
-    {'fillColor':fillColor(feature)} | unhighlighted_style
-    ,highlight_function=lambda feature: 
-    {'fillColor':fillColor(feature)} | highlighted_style
-    ,zoom_on_click=True
-    ,tooltip=tooltip
-    ).add_to(m)
-
-    colormap.caption = datacolumnalias
-    colormap.add_to(m)
-
-    m.save(PLOT_FOLDER+PREFECTURE+"profit_map.html")
+    # m.save(PLOT_FOLDER+PREFECTURE+"profit_map.html")
 
     ##############################
     #### PROFIT VS STRENGTH   ####
@@ -518,27 +435,27 @@ def make_pref(PREFECTURE):
 
 
 
-#PREFECTURE = "佐賀県"
-#PREFECTURE = "秋田県"
-#PREFECTURE = "徳島県"
-#PREFECTURE = "山形県"
-#PREFECTURE = "北海道"
-#PREFECTURE = "福岡県"
-#PREFECTURE = "千葉県"
-#PREFECTURE = "青森県"
-#PREFECTURE = "埼玉県"
-#PREFECTURE = "東京都"
-#PREFECTURE = "北海道"
-#PREFECTURE = '奈良県'
-#PREFECTURE = '大阪府'
-#PREFECTURE="静岡県"
-#PREFECTURE="兵庫県"
-#make_pref(PREFECTURE)
+# PREFECTURE = "佐賀県"
+# PREFECTURE = "秋田県"
+# PREFECTURE = "徳島県"
+# PREFECTURE = "山形県"
+# PREFECTURE = "北海道"
+# PREFECTURE = "福岡県"
+# PREFECTURE = "千葉県"
+# PREFECTURE = "青森県"
+# PREFECTURE = "埼玉県"
+# PREFECTURE = "東京都"
+# PREFECTURE = "北海道"
+# PREFECTURE = '奈良県'
+# PREFECTURE = '大阪府'
+# PREFECTURE="静岡県"
+# PREFECTURE="兵庫県"
+# make_pref(PREFECTURE)
 
-# for PREFECTURE in ['北海道','秋田県']:
-#     make_pref(PREFECTURE)
-
-for PREFECTURE in furusato_df["prefecture"].unique():
-    print(PREFECTURE)
+for PREFECTURE in ['北海道','秋田県']:
     make_pref(PREFECTURE)
+
+# for PREFECTURE in furusato_df["prefecture"].unique():
+#     print(PREFECTURE)
+#     make_pref(PREFECTURE)
 
