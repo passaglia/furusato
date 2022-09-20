@@ -12,7 +12,6 @@ import shutil
 from data import local_map_df_loader, pref_map_df_loader
 
 PLOT_FOLDER = os.path.join(os.getcwd(),'foliummaps/')
-EXTRA_PLOT_FOLDER = './furusato-private/draft/figures/'
 
 output_filetypes = ['pdf']
 

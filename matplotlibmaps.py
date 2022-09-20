@@ -12,9 +12,9 @@ from samplot.circusboy import CircusBoy
 import samplot.colors as samcolors
 
 from data import local_map_df_loader, pref_map_df_loader
+from config import productionPlotFolder
 
 PLOT_FOLDER = os.path.join(os.getcwd(),'matplotlibmaps/')
-EXTRA_PLOT_FOLDER = './furusato-private/draft/figures/'
 
 output_filetypes = ['pdf']
 
@@ -124,7 +124,7 @@ for lang in langs:
 
     fig.savefig(PLOT_FOLDER+'prefecture-profit_' + lang + '.pdf',transparent=True,bbox_inches="tight")
     fig.savefig(PLOT_FOLDER+'prefecture-profit_' + lang + '.png',transparent=True,bbox_inches="tight")
-    shutil.copy(PLOT_FOLDER+'prefecture-profit_'+lang+'.pdf',EXTRA_PLOT_FOLDER)
+    shutil.copy(PLOT_FOLDER+'prefecture-profit_'+lang+'.pdf',productionPlotFolder)
 
     plt.close('all')
 
@@ -374,9 +374,9 @@ def make_pref(PREFECTURE):
         fig.savefig(PLOT_FOLDER+PREFECTURE_EN+'-profit-map_'+lang+'.png',bbox_inches="tight")
         plt.close('all')
 
-        os.makedirs(EXTRA_PLOT_FOLDER,exist_ok=True)
+        os.makedirs(productionPlotFolder,exist_ok=True)
 
-        shutil.copy(PLOT_FOLDER+PREFECTURE_EN+'-profit-map_'+lang+'.pdf',EXTRA_PLOT_FOLDER)
+        shutil.copy(PLOT_FOLDER+PREFECTURE_EN+'-profit-map_'+lang+'.pdf',productionPlotFolder)
 
         plt.close('all')
         

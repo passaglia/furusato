@@ -139,7 +139,7 @@ def pref_map_df_loader(quality='stylized'):
     return pref_map_df
 
 # # ##################################
-# # ### Saving for size estimate  ####
+# # ### To save to geojson  ##########
 # # ##################################
 
 # gpd.GeoDataFrame(local_df).to_file('./local.geojson',driver='GeoJSON')
