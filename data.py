@@ -55,6 +55,7 @@ fn_pop_ind_pref_df = pd.merge(fn_pop_pref_df, prefmean_ind_df, on=["year","prefe
 
 fn_rough_pop_ind_df = pd.merge(fn_rough_pop_df, local_ind_df, on=["code", "year", "prefecture"],validate='one_to_one', suffixes=['','_ind'])
 assert(len(fn_rough_pop_ind_df) == len(fn_rough_pop_df))
+
 ##################################
 ##### Adding readings data ######
 #################################
@@ -68,23 +69,41 @@ assert(len(fn_pop_ind_pref_reading_df)==len(fn_pop_ind_pref_df))
 
 fn_rough_pop_ind_reading_df = pd.merge(fn_rough_pop_ind_df, names_df[['code','prefecture-reading','city-reading']],how='left', on="code", validate="many_to_one")
 assert(len(fn_rough_pop_ind_reading_df)==len(fn_rough_pop_ind_df))
-######################################
-### Aliasing ####
-######################################
 
-local_df = fn_pop_ind_reading_df
-pref_df = fn_pop_ind_pref_reading_df
+########################
+### Adding ckz data ####
+########################
+
+from sim import ckz_sim_df
+fn_pop_ind_reading_ckz_df = pd.merge(fn_pop_ind_reading_df, ckz_sim_df, on=["prefecture", "code", "year"],validate='one_to_one', suffixes=['','_ckz'])
+assert(len(fn_pop_ind_reading_ckz_df) == len(fn_pop_ind_reading_df))
+
+pref_ckz_sim_df = ckz_sim_df.groupby(['prefecture', 'year']).sum().reset_index()
+fn_pop_ind_pref_reading_ckz_df = pd.merge(fn_pop_ind_pref_reading_df, pref_ckz_sim_df, on=["prefecture",  "year"],validate='one_to_one', suffixes=['','_ckz'])
+assert(len(fn_pop_ind_pref_reading_ckz_df) == len(fn_pop_ind_pref_reading_df))
+
+#################
+### Aliasing ####
+#################
+
+local_df = fn_pop_ind_reading_ckz_df
+pref_df = fn_pop_ind_pref_reading_ckz_df
+
 rough_df = fn_rough_pop_ind_reading_df
 
 #########################################################
 ###### Computing some per-person and fraction columns ###
 #######################################
 pd.options.mode.chained_assignment = None
+local_df['profit-incl-ckz'] = local_df.apply(lambda row: row['netgainminusdeductions']+(row['ckz']-row['ckz-noFN']),axis=1)
 local_df['profit-per-person'] = local_df.apply(lambda row: row['netgainminusdeductions']/row['total-pop'],axis=1)
+local_df['profit-per-person-incl-ckz'] = local_df.apply(lambda row: row['profit-incl-ckz']/row['total-pop'],axis=1)
 totalbyyear = local_df.groupby('year').sum()['donations']
 local_df['donations-fraction'] = local_df.apply(lambda row: row['donations']/totalbyyear[row['year']],axis=1)
 local_df['donations-per-person'] = local_df.apply(lambda row: row['donations']/row['total-pop'],axis=1)
 
+pref_df['profit-incl-ckz'] = pref_df.apply(lambda row: row['netgainminusdeductions']+(row['ckz']-row['ckz-noFN']),axis=1)
+pref_df['profit-per-person'] = pref_df.apply(lambda row: row['netgainminusdeductions']/row['total-pop'],axis=1)
 pref_df['profit-per-person'] = pref_df.apply(lambda row: row['netgainminusdeductions']/row['total-pop'],axis=1)
 totalbyyear = pref_df.groupby('year').sum()['donations']
 pref_df['donations-fraction'] = pref_df.apply(lambda row: row['donations']/totalbyyear[row['year']],axis=1)

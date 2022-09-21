@@ -296,8 +296,8 @@ def make_pref(PREFECTURE):
     m = folium.Map(**map_style)
 
     tooltip = GeoJsonTooltip(
-        fields=["prefecture", "city", "city-reading", "code", "total-pop",  "netgainminusdeductions", "donations-fraction-prefecture", "economic-strength-index", "dummy"],
-        aliases=["Prefecture:", "City:", "City (en):","Code:", "Population:", "Net Gain Minus Deductions:", "Fraction of all donations in Prefecture:", "Economic Strength Index", datacolumnalias + ':'],
+        fields=["prefecture", "city", "city-reading", "code", "total-pop",  "netgainminusdeductions", "donations-fraction-prefecture", "economic-strength-index", "profit-incl-ckz", "dummy"],
+        aliases=["Prefecture:", "City:", "City (en):","Code:", "Population:", "Net Gain Minus Deductions:", "Fraction of all donations in Prefecture:", "Economic Strength Index", "Profit including ckz", datacolumnalias + ':'],
         localize=True,
         sticky=False,
         labels=True,
@@ -341,8 +341,8 @@ def make_pref(PREFECTURE):
     m = folium.Map(**map_style)
 
     tooltip = GeoJsonTooltip(
-        fields=["prefecture", "city", "city-reading", "code", "total-pop",  "donations", "donations-fraction-prefecture", "economic-strength-index", "dummy"],
-        aliases=["Prefecture:", "City:", "City (en):","Code:", "Population:", "Donations:", "Fraction of all donations in Prefecture:", "Economic Strength Index", datacolumnalias + ':'],
+        fields=["prefecture", "city", "city-reading", "code", "total-pop",  "donations", "donations-fraction-prefecture", "economic-strength-index", "profit-incl-ckz", "dummy"],
+        aliases=["Prefecture:", "City:", "City (en):","Code:", "Population:", "Donations:", "Fraction of all donations in Prefecture:", "Economic Strength Index", "Profit Including ckz", datacolumnalias + ':'],
         localize=True,
         sticky=False,
         labels=True,
@@ -365,10 +365,66 @@ def make_pref(PREFECTURE):
 
     m.save(PLOT_FOLDER+PREFECTURE+"profit_map.html")
 
+
+    ##############################
+    #### FOLIUM MAP OF PROFIT CKZ ###
+    ##############################
+
+    datacolumn= "profit-incl-ckz"
+    datacolumnalias = "Profit including ckz (百万円)"
+    scalingfactor = hyakuman
+
+    df['dummy'] = df[datacolumn]/scalingfactor
+
+    largestdeviation = np.max(np.abs(df['dummy']))
+    #largestdeviation = 2000
+
+    rgbacolors = (matplotlib.cm.get_cmap('coolwarm')(np.linspace(0,1,11)))
+    colormap = cm.LinearColormap( [matplotlib.colors.to_hex(color) for color in rgbacolors],
+        vmin=-largestdeviation, vmax=largestdeviation
+    )
+    colormap = lambda val: matplotlib.colors.to_hex(rgbacolors[0]) if val<0 else matplotlib.colors.to_hex(rgbacolors[-1])
+
+
+    m = folium.Map(**map_style)
+
+    tooltip = GeoJsonTooltip(
+        fields=["prefecture", "city", "city-reading", "code", "total-pop",  "donations", "donations-fraction-prefecture", "economic-strength-index", "netgainminusdeductions", "dummy"],
+        aliases=["Prefecture:", "City:", "City (en):","Code:", "Population:", "Donations:", "Fraction of all donations in Prefecture:", "Economic Strength Index", "Net Gain Minus Deductions", datacolumnalias + ':'],
+        localize=True,
+        sticky=False,
+        labels=True,
+        style=tooltipstyle,
+        max_width=800,
+    )
+
+    folium.GeoJson(df
+    ,name = datacolumn
+    ,style_function=lambda feature: 
+    {'fillColor':fillColor(colormap,feature)} | unhighlighted_style
+    ,highlight_function=lambda feature: 
+    {'fillColor':fillColor(colormap, feature)} | highlighted_style
+    ,zoom_on_click=True
+    ,tooltip=tooltip
+    ).add_to(m)
+
+    #colormap.caption = datacolumnalias
+    try:
+        colormap.add_to(m)
+    except AttributeError:
+        pass
+
+    m.save(PLOT_FOLDER+PREFECTURE+"profit_ckz_map.html")
+
+    print(len(df.loc[df['profit-incl-ckz']<0]))
+    print(len(df.loc[df['netgainminusdeductions']<0]))
+
+print(len(local_map_df_year.loc[local_map_df['profit-incl-ckz']<0]))
+print(len(local_map_df_year.loc[local_map_df['netgainminusdeductions']<0]))
 # for PREFECTURE in ['北海道','秋田県']:
 #     make_pref(PREFECTURE)
-
-for PREFECTURE in pref_map_df["prefecture"].unique():
-    print(PREFECTURE)
-    make_pref(PREFECTURE)
+PREFECTURE = '北海道'
+# for PREFECTURE in pref_map_df["prefecture"].unique():
+#     print(PREFECTURE)
+#     make_pref(PREFECTURE)
 

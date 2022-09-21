@@ -165,5 +165,3 @@ for lang in langs:
     fig.savefig(save_folder+'deduction_vs_income_' + lang + '.png')
     plt.close('all')
 
-(3621*10**8)/(366*10**4)
-(1904*10**8)/(366*10**4)
