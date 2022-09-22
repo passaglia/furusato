@@ -29,7 +29,6 @@ year = 2021
 #################################
 pref_map_df = pref_map_df_loader()
 
-
 ##################################
 ### Matplotlib version -- pref ###
 ##################################
@@ -37,10 +36,13 @@ pref_map_df = pref_map_df_loader()
 df = pref_map_df.loc[pref_map_df['year']==year]
 
 datacolumn= "profit-per-person"
+#datacolumn= "profit-per-person-incl-ckz"
+
 scalingfactor = 1
 
-df['dummy'] = df[datacolumn]/scalingfactor
+df['dummy'] = (df[datacolumn]/scalingfactor/1000).apply(round)*1000
 
+df['profit-per-person']-df["profit-per-person-incl-ckz"]
 import shapely
 
 df.loc[df['prefecture'] == "沖縄県", 'geometry'] = df.loc[df['prefecture'] == "沖縄県", 'geometry'].affine_transform([1, 0, 0, 1, 6.5, 13])
@@ -63,7 +65,7 @@ for lang in langs:
     plt.axis('off')
 
     from matplotlib.colors import TwoSlopeNorm
-    bins = [-11000,-6000,-1000, 0, 1000, 6000, 11000, 21000]
+    bins = [-10001,-6000,-1000, 0, 1000, 6000, 11000, 21001]
     bluecolors = matplotlib.cm.get_cmap('coolwarm')(np.linspace(0,.43,3))
     redcolors = matplotlib.cm.get_cmap('coolwarm')(np.linspace(.57,1,4))
     rgbacolors = np.concatenate([bluecolors,redcolors])
@@ -71,7 +73,7 @@ for lang in langs:
     #cmap = ListedColormap([matplotlib.colors.to_hex(color) for color in rgbacolors])
     cmap, norm = matplotlib.colors.from_levels_and_colors(bins, rgbacolors, extend="neither")
 
-    ax = df.plot(column=datacolumn, ax=ax,  cmap=cmap, norm=norm,legend=False,lw=.05, edgecolor='#4341417c')#edgecolor='grey'#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
+    ax = df.plot(column='dummy', ax=ax,  cmap=cmap, norm=norm,legend=False,lw=.05, edgecolor='#4341417c')#edgecolor='grey'#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
     #national_map_df.plot(ax=ax,edgecolor=(0,0,0),facecolor="None",lw=.3)
     #df.loc[df['prefecture'] == "沖縄県"].plot(ax=ax,edgecolor=(0,0,0),facecolor="None",lw=.3)#scheme='userdefined', edgecolor=(0,0,0),lw=.1, classification_kwds={'bins':bins}
     ax.set_xlim([-.75*10**6,.98*10**6])
@@ -81,7 +83,6 @@ for lang in langs:
 
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
-    #cax = divider.append_axes("bottom", size="2%", pad=0.03)
 
     cbwidth = ax.get_position().width*.75
     axwidth = ax.get_position().width
@@ -91,9 +92,9 @@ for lang in langs:
 
     cb = matplotlib.colorbar.ColorbarBase(cax, cmap=cmap,
                                     norm=norm,
-                                    boundaries=bins,
+                                    boundaries=np.round(np.array(bins)/1000)*1000,
                                     extend='neither',
-                                    ticks=bins,
+                                    ticks=np.round(np.array(bins)/1000)*1000,
                                     #spacing='proportional',
                                     spacing='uniform',
                                     orientation='horizontal')
@@ -102,7 +103,6 @@ for lang in langs:
     cb.ax.tick_params(axis='both', colors='none')
     cb.outline.set_edgecolor('none')
     cb.set_label(labels[lang],color='black')
-    #cax.xaxis.set_label_position('top')
 
 
     #https://medium.datadriveninvestor.com/creating-a-discrete-colorbar-with-custom-bin-sizes-in-matplotlib-50b0daf8dd46
@@ -120,15 +120,20 @@ for lang in langs:
     pL = [pc[0]-L*np.cos(np.pi/2-theta+phi),pc[1]+L*np.sin(np.pi/2-theta+phi)]
     ax.plot([pL[0],pc[0],pR[0]], [pL[1],pc[1],pR[1]], color='black',lw=1)
 
-    #bp.set_byline(cax, "Sam Passaglia",pad=-4.5)
+    # fig.savefig(PLOT_FOLDER+'prefecture-profit_' + lang + 'withckz.pdf',transparent=True,bbox_inches="tight")
+    # fig.savefig(PLOT_FOLDER+'prefecture-profit_' + lang + 'withckz.png',transparent=True,bbox_inches="tight")
+    # shutil.copy(PLOT_FOLDER+'prefecture-profit_'+lang+'withckz.pdf',productionPlotFolder)
+
 
     fig.savefig(PLOT_FOLDER+'prefecture-profit_' + lang + '.pdf',transparent=True,bbox_inches="tight")
     fig.savefig(PLOT_FOLDER+'prefecture-profit_' + lang + '.png',transparent=True,bbox_inches="tight")
     shutil.copy(PLOT_FOLDER+'prefecture-profit_'+lang+'.pdf',productionPlotFolder)
 
+
     plt.close('all')
 
 print(len(df.loc[df['profit-per-person']<0]))
+print(len(df.loc[df['profit-per-person-incl-ckz']<0]))
 
 ###########################
 ### Matplotlib version -- local ###
@@ -193,8 +198,10 @@ def make_pref(PREFECTURE):
     ##################################
     ### Matplotlib map ###########
     ##################################
-    
+    datacolumn= "profit-incl-ckz"
     datacolumn= "netgainminusdeductions"
+    datacolumn= "profit-incl-ckz-incl-pref-tax-share"
+    
     maxval = df[datacolumn].max()/oku
     if maxval <= 5:
         maxbin = np.ceil(maxval)
@@ -374,13 +381,16 @@ def make_pref(PREFECTURE):
         fig.savefig(PLOT_FOLDER+PREFECTURE_EN+'-profit-map_'+lang+'.png',bbox_inches="tight")
         plt.close('all')
 
-        os.makedirs(productionPlotFolder,exist_ok=True)
-
         shutil.copy(PLOT_FOLDER+PREFECTURE_EN+'-profit-map_'+lang+'.pdf',productionPlotFolder)
 
         plt.close('all')
         
-for PREFECTURE in pref_map_df["prefecture"].unique():
+for PREFECTURE in ['秋田県','北海道']:
     print(PREFECTURE)
     make_pref(PREFECTURE)
+
+
+# for PREFECTURE in pref_map_df["prefecture"].unique():
+#     print(PREFECTURE)
+#     make_pref(PREFECTURE)
 

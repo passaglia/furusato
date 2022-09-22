@@ -11,7 +11,7 @@ rough_annual_df = furusato_rough_df.groupby('year').sum().reset_index()
 
 #FN at the prefectural level
 furusato_pref_df = furusato_df.groupby(['prefecture','year']).sum().reset_index().drop(['flag'],axis=1)
-
+assert(furusato_pref_df['pref-tax-deductions'].sum() == furusato_df.loc[furusato_df['city']=='prefecture', 'deductions'].sum())
 #FN at the annual level
 annual_df = furusato_pref_df.groupby(['year']).sum().reset_index()
 
@@ -35,12 +35,13 @@ assert(len(fn_pop_pref_df) == len(furusato_pref_df))
 fn_rough_pop_df = pd.merge(furusato_rough_df, local_pop_df, on=["code", "year", "prefecture"],validate='one_to_one', suffixes=['','_pop'])
 fn_rough_pop_df = fn_rough_pop_df.drop('city_pop', axis=1)
 assert(len(furusato_rough_df.loc[~furusato_rough_df['code'].isin(fn_rough_pop_df['code']) & ~(furusato_rough_df['city']=='prefecture')]) == 0)
+
 ###################################
-##### Adding economic data ######
-###################################
+##### Adding economic data ########
+################################### 
 from japandata.indices.data import local_ind_df, pref_ind_df, prefmean_ind_df
 
-## Clone 2020 data for 2021 
+## Clone 2020 data for 2021 ##TODO AUTOMATE THIS
 year_clone_df = local_ind_df.loc[local_ind_df['year'] == 2020].copy()
 year_clone_df['year'] = 2021
 local_ind_df = pd.concat([local_ind_df, year_clone_df])
@@ -93,21 +94,45 @@ rough_df = fn_rough_pop_ind_reading_df
 
 #########################################################
 ###### Computing some per-person and fraction columns ###
-#######################################
+#########################################################
+
 pd.options.mode.chained_assignment = None
-local_df['profit-incl-ckz'] = local_df.apply(lambda row: row['netgainminusdeductions']+(row['ckz']-row['ckz-noFN']),axis=1)
+
+local_df['profit-from-ckz'] = local_df['ckz']-local_df['ckz-noFN']
+
+local_df['profit-incl-ckz'] = local_df['netgainminusdeductions']+local_df['profit-from-ckz']
+
+def prefTaxShare(row):
+    #print(row.name)
+    correspondingPrefRow = pref_df.loc[(pref_df['prefecture']==row['prefecture']) & (pref_df['year']==row['year'])]
+    share = correspondingPrefRow['pref-tax-deductions']*row['total-pop']/correspondingPrefRow['total-pop']
+    assert(share.shape == (1,))
+    #print(1-(share.values[0]/(row['pref-tax-deductions'])))
+    return share.values[0]
+
+local_df['pref-tax-deduction-share'] = local_df.apply(prefTaxShare,axis=1)
+assert(local_df['pref-tax-deductions'].sum() == local_df['pref-tax-deduction-share'].sum())
+
+local_df['profit-incl-pref-tax-share'] = local_df['netgainminusdeductions']-local_df['pref-tax-deduction-share']
+
+local_df['profit-incl-ckz-incl-pref-tax-share'] = local_df.apply(lambda row: row['profit-incl-ckz']-row['pref-tax-deduction-share'],axis=1)
+local_df_year = local_df.loc[local_df['year']==2021]
+local_df_year.loc[local_df_year['profit-incl-ckz']<0]
+
 local_df['profit-per-person'] = local_df.apply(lambda row: row['netgainminusdeductions']/row['total-pop'],axis=1)
 local_df['profit-per-person-incl-ckz'] = local_df.apply(lambda row: row['profit-incl-ckz']/row['total-pop'],axis=1)
+
 totalbyyear = local_df.groupby('year').sum()['donations']
 local_df['donations-fraction'] = local_df.apply(lambda row: row['donations']/totalbyyear[row['year']],axis=1)
 local_df['donations-per-person'] = local_df.apply(lambda row: row['donations']/row['total-pop'],axis=1)
 
 pref_df['profit-incl-ckz'] = pref_df.apply(lambda row: row['netgainminusdeductions']+(row['ckz']-row['ckz-noFN']),axis=1)
 pref_df['profit-per-person'] = pref_df.apply(lambda row: row['netgainminusdeductions']/row['total-pop'],axis=1)
-pref_df['profit-per-person'] = pref_df.apply(lambda row: row['netgainminusdeductions']/row['total-pop'],axis=1)
+pref_df['profit-per-person-incl-ckz'] = pref_df.apply(lambda row: row['profit-incl-ckz']/row['total-pop'],axis=1)
 totalbyyear = pref_df.groupby('year').sum()['donations']
 pref_df['donations-fraction'] = pref_df.apply(lambda row: row['donations']/totalbyyear[row['year']],axis=1)
 pref_df['donations-per-person'] = pref_df.apply(lambda row: row['donations']/row['total-pop'],axis=1)
+
 
 #######################
 ### Removing Tokyo ####

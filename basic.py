@@ -17,7 +17,7 @@ PLOT_FOLDER = os.path.join(os.path.dirname(__file__),'basic/')
 output_filetypes = ['pdf','png']
 
 os.makedirs(PLOT_FOLDER, exist_ok=True)
-os.makedirs(productionPlotFolder, exist_ok=True)
+#os.makedirs(productionPlotFolder, exist_ok=True)
 
 for filetype in output_filetypes:
     os.makedirs(PLOT_FOLDER+'/'+filetype, exist_ok=True)

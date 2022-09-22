@@ -424,7 +424,7 @@ print(len(local_map_df_year.loc[local_map_df['netgainminusdeductions']<0]))
 # for PREFECTURE in ['北海道','秋田県']:
 #     make_pref(PREFECTURE)
 PREFECTURE = '北海道'
-# for PREFECTURE in pref_map_df["prefecture"].unique():
-#     print(PREFECTURE)
-#     make_pref(PREFECTURE)
+for PREFECTURE in pref_map_df["prefecture"].unique():
+    print(PREFECTURE)
+    make_pref(PREFECTURE)
 
