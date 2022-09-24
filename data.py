@@ -4,6 +4,9 @@ import numpy as np
 
 from japandata.furusatonouzei.data import furusato_df, furusato_rough_df
 
+### TODO: PUT THE IMPROVED CKZ SIM IN HERE
+### TODO: CHANGE HOW THE PREFECTURE/MUNICIPAL DATA IS SPLIT
+
 ## furusato_df contains all the data including the donations directly to prefectures.
 
 ## This two contain just donations data, but cover the earliest years of the program
@@ -132,7 +135,6 @@ pref_df['profit-per-person-incl-ckz'] = pref_df.apply(lambda row: row['profit-in
 totalbyyear = pref_df.groupby('year').sum()['donations']
 pref_df['donations-fraction'] = pref_df.apply(lambda row: row['donations']/totalbyyear[row['year']],axis=1)
 pref_df['donations-per-person'] = pref_df.apply(lambda row: row['donations']/row['total-pop'],axis=1)
-
 
 #######################
 ### Removing Tokyo ####

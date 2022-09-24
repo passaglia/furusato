@@ -4,264 +4,465 @@ from japandata.furusatonouzei.data import furusato_df as fdf
 from japandata.chihoukoufuzei.data import local_df as cdf
 from japandata.chihoukoufuzei.data import pref_df as cdf_pref
 
-from japandata.indices.data import local_ind_df 
-from japandata.indices.data import pref_ind_df 
+from japandata.indices.data import local_ind_df
+from japandata.indices.data import pref_ind_df
 import matplotlib.pyplot as plt
 
 from samplot.baseplot import BasePlot
 from samplot.circusboy import CircusBoy
 
-## Constraints:
-## 1 - (Before implementing the seppan funding): Total ckz should be the same
-## 2 - If the total FN amount is zero, total debt amount (and everything else) should be the same
-## 3 - (Before implementing the debt rollover): Only touch the special-debt, final-demand, ckz
-## 4 - final-demand + special-debt = demand-pre-debt
-## 5 - final-demand - income should be nearly equal to ckz (up the small adjustment factor and ignoring fukoufudantai)
-## 6 - The formula for debt is nominally constant * (yeardf['demand-pre-debt']-yeardf['income']) * economic-strength-index-prev3yearavg with the constant chosen to that the total bond amount leads to a ckz of the desired size.
+# Next steps
+# Look at whether there is a rollover effect from the debt in the following year.
+# Look at how the subsidy money is distributed -- actually put into the same futsuu money pool?
 
-### seppan data from the soumushou graph
-chou=10**12
-shortfall = {2022: 0*chou, 2021:1.7*2*chou, 2020:0*chou, 2019:0*chou, 2018:.2*2*chou, 2017:.7*2*chou, 2016:.3*2*chou, 2015:1.5*2*chou}
+# Constraints:
+# 1 - (Before implementing the seppan funding): Total ckz should be the same
+# 2 - If the total FN amount is zero, total debt amount (and everything else) should be the same
+# 3 - (Before implementing the debt rollover): Only touch the special-debt, final-demand, ckz
+# 4 - final-demand + special-debt = demand-pre-debt
+# 5 - final-demand - income should be nearly equal to ckz (up the small adjustment factor and ignoring fukoufudantai)
+# 6 - The formula for debt is nominally constant * (yeardf['demand-pre-debt']-yeardf['income']) * economic-strength-index-prev3yearavg with the constant chosen to that the total bond amount leads to a ckz of the desired size.
 
-cb = CircusBoy()
-###### LOCAL SIM 
-output_df = pd.DataFrame()
-simStartYear = np.min(fdf.year)
-simEndYear =  np.max(cdf.year)-1
-for year in range(simStartYear, simEndYear+1):
-    chihoukoufuzeiyear = year+1 #TODO: ACTUALLY THIS SHOULD BE +2. Donations are made in year X, decline in income is reported in year X+1, and then compensation occurs in X+2年度. Implement an estimation of the effect by using the last year's average or something...
-    print(year)
-    fdfyear = fdf.loc[fdf.year == year]
-    ## get rid of the prefectures 
-    fdfyear = fdfyear.drop(fdfyear.loc[fdfyear['city']=='prefecture'].index)
-    # get rid of the tokyo23
-    fdfyear = fdfyear.drop(fdfyear.loc[(fdfyear['prefecture']=='東京都') & (fdfyear['city']).str.contains('区')].index)
-    cdfyear = cdf.loc[cdf.year == chihoukoufuzeiyear]
-    cdfyear = cdfyear.drop(cdfyear.loc[(cdfyear['prefecture']=='東京都') & (cdfyear['city']).str.contains('区')].index)
-    assert(len(cdfyear) == len(fdfyear))
+# seppan data from the soumushou graph
+chou = 10**12
+shortfall = {2022: 0*chou, 2021: 1.7*2*chou, 2020: 0*chou, 2019: 0*chou,
+             2018: .2*2*chou, 2017: .7*2*chou, 2016: .3*2*chou, 2015: 1.5*2*chou}
 
-    simulatedcdfyear = cdfyear.copy()
-    simulatedcdfyear = simulatedcdfyear.merge(fdfyear,on=['prefecture','code'],validate='one_to_one', suffixes=['','_fdf'])
-    simulatedcdfyear['ckz-preAdj'] = simulatedcdfyear['final-demand']-simulatedcdfyear['income'] ## Amount of ckz before final adjustment
-    simulatedcdfyear.loc[simulatedcdfyear['ckz-preAdj']<0,'ckz-preAdj'] = 0 ## ckz cant be negative
 
-    simulatedcdfyear.loc[simulatedcdfyear['economic-strength-index-prev3yearavg'].isna(),'economic-strength-index-prev3yearavg'] = simulatedcdfyear['economic-strength-index'] ## For places without a 3-year ESI, use current year ESI
+def undo_fn_sim(year_df):
+    """ Take all the data which includes FN and add -noFN cols
+    """
 
-    ## The debt scaling constant that was used for each city in practice
-    simulatedcdfyear['debt-scaling-factor'] = simulatedcdfyear['special-debt']/(simulatedcdfyear['demand-pre-debt']-simulatedcdfyear['income'])/simulatedcdfyear['economic-strength-index-prev3yearavg']
+    simYear_df = year_df.copy()
+    simYear_df['ckz-preAdj'] = simYear_df['final-demand'] - \
+        simYear_df['income']  # Amount of ckz before final adjustment
+    simYear_df.loc[simYear_df['ckz-preAdj'] < 0,
+                   'ckz-preAdj'] = 0  # ckz cant be negative
+
+    # For places without a 3-year ESI, use current year ESI
+    simYear_df.loc[simYear_df['economic-strength-index-prev3yearavg'].isna(
+    ), 'economic-strength-index-prev3yearavg'] = simYear_df['economic-strength-index']
+    assert(
+        np.sum(simYear_df['economic-strength-index-prev3yearavg'].isna()) == 0)
+
+    # The debt scaling constant that was used for each city in practice
+    simYear_df['debt-scaling-factor'] = simYear_df['special-debt'] / \
+        (simYear_df['demand-pre-debt']-simYear_df['income']) / \
+        simYear_df['economic-strength-index-prev3yearavg']
     # The adjustment factor that was used to reduce the final demand and get the ckz
-    simulatedcdfyear['adjustment-factor'] =  1-(simulatedcdfyear['ckz']+simulatedcdfyear['income'])/simulatedcdfyear['final-demand']
-    simulatedcdfyear.loc[simulatedcdfyear['ckz']==0,'adjustment-factor'] = 0
+    simYear_df['adjustment-factor'] = 1 - \
+        (simYear_df['ckz']+simYear_df['income'])/simYear_df['final-demand']
+    simYear_df.loc[simYear_df['ckz'] == 0, 'adjustment-factor'] = 0
 
-    ## Now to undo the FN effect add back 0.75*deductions
-    simulatedcdfyear['income-noFN'] = simulatedcdfyear['income']+0.75*simulatedcdfyear['deductions']
-    ## With this higher income, recompute how much debt they would have been allowed to issue
+    # Now to undo the FN effect by adding back 0.75*deductions
+    simYear_df['income-noFN'] = simYear_df['income'] + \
+        0.75*simYear_df['deductions']
+    # With this higher income, recompute how much debt they would have been allowed to issue
 
-    if shortfall[chihoukoufuzeiyear]>0:
+    if shortfall[chihoukoufuzeiyear] > 0:
         subsidyFraction = 0.5
     else:
         subsidyFraction = 0
     print('Using subsidy fraction', subsidyFraction)
-    governmentSubsidyTotal = subsidyFraction* 0.75*simulatedcdfyear['deductions'].sum() ## For testing purposes
+    governmentSubsidyTotal = subsidyFraction * 0.75 * \
+        simYear_df['deductions'].sum()  # For testing purposes
 
-    ## Find a uniform scaling of the debt-scaling-factors such that with the nouzei undone we still get the right total ckz-preAdj
+    # Find a uniform scaling of the debt-scaling-factors such that with the nouzei undone we still get the right total ckz-preAdj
     from scipy.optimize import minimize
+
     def ckzPreAdjConstraint(extraFactor):
-        simulatedcdfyear['special-debt-noFN'] =  (extraFactor*simulatedcdfyear['debt-scaling-factor']*(simulatedcdfyear['demand-pre-debt']-simulatedcdfyear['income-noFN'])*simulatedcdfyear['economic-strength-index-prev3yearavg'])
-        simulatedcdfyear['final-demand-noFN'] = simulatedcdfyear['demand-pre-debt']-simulatedcdfyear['special-debt-noFN']
-        simulatedcdfyear['ckz-preAdj-noFN'] = simulatedcdfyear['final-demand-noFN']-simulatedcdfyear['income-noFN'] 
-        simulatedcdfyear.loc[simulatedcdfyear['ckz-preAdj-noFN']<0,'ckz-preAdj-noFN'] = 0
-        return np.abs(simulatedcdfyear['ckz-preAdj-noFN'].sum() - (simulatedcdfyear['ckz-preAdj'].sum() - governmentSubsidyTotal))
+        simYear_df['special-debt-noFN'] = (extraFactor*simYear_df['debt-scaling-factor']*(
+            simYear_df['demand-pre-debt']-simYear_df['income-noFN'])*simYear_df['economic-strength-index-prev3yearavg'])
+        simYear_df['final-demand-noFN'] = simYear_df['demand-pre-debt'] - \
+            simYear_df['special-debt-noFN']
+        simYear_df['ckz-preAdj-noFN'] = simYear_df['final-demand-noFN'] - \
+            simYear_df['income-noFN']
+        simYear_df.loc[simYear_df['ckz-preAdj-noFN']
+                       < 0, 'ckz-preAdj-noFN'] = 0
+        return np.abs(simYear_df['ckz-preAdj-noFN'].sum() - (simYear_df['ckz-preAdj'].sum() - governmentSubsidyTotal))
 
     res = minimize(ckzPreAdjConstraint, 1)
     extraDebtFactorFound = res.x
-    simulatedcdfyear['debt-scaling-factor-noFN'] = extraDebtFactorFound*simulatedcdfyear['debt-scaling-factor']
-    simulatedcdfyear['special-debt-noFN'] =  simulatedcdfyear['debt-scaling-factor-noFN']*(simulatedcdfyear['demand-pre-debt']-simulatedcdfyear['income-noFN'])*simulatedcdfyear['economic-strength-index-prev3yearavg']
-    simulatedcdfyear['final-demand-noFN'] = simulatedcdfyear['demand-pre-debt']-simulatedcdfyear['special-debt-noFN']
-    simulatedcdfyear['ckz-preAdj-noFN'] = simulatedcdfyear['final-demand-noFN']-simulatedcdfyear['income-noFN'] 
-    simulatedcdfyear.loc[simulatedcdfyear['ckz-preAdj-noFN']<0,'ckz-preAdj-noFN'] = 0
-    #assert(np.abs(1-simulatedcdfyear['ckz-preAdj-noFN'].sum()/simulatedcdfyear['ckz-preAdj'].sum())<0.001)
+    simYear_df['debt-scaling-factor-noFN'] = extraDebtFactorFound * \
+        simYear_df['debt-scaling-factor']
+    simYear_df['special-debt-noFN'] = simYear_df['debt-scaling-factor-noFN'] * \
+        (simYear_df['demand-pre-debt']-simYear_df['income-noFN']) * \
+        simYear_df['economic-strength-index-prev3yearavg']
+    simYear_df['final-demand-noFN'] = simYear_df['demand-pre-debt'] - \
+        simYear_df['special-debt-noFN']
+    simYear_df['ckz-preAdj-noFN'] = simYear_df['final-demand-noFN'] - \
+        simYear_df['income-noFN']
+    simYear_df.loc[simYear_df['ckz-preAdj-noFN'] < 0, 'ckz-preAdj-noFN'] = 0
+    assert(np.abs(1-(simYear_df['ckz-preAdj-noFN'].sum() +
+           governmentSubsidyTotal)/simYear_df['ckz-preAdj'].sum()) < 0.001)
 
-    ## Now do the same for the adjustment factor.
-    ## Find a uniform scaling of the adjustment-factors such that with the nouzei undone we still get the right total ckz
+    # Find a uniform scaling of the adjustment-factors such that with the nouzei undone we still get the right total ckz
     def ckzConstraint(extraFactor):
-        simulatedcdfyear['ckz-noFN'] = simulatedcdfyear['final-demand-noFN'] * (1- extraFactor * simulatedcdfyear['adjustment-factor']) - simulatedcdfyear['income-noFN']
-        simulatedcdfyear.loc[simulatedcdfyear['ckz-noFN']<0,'ckz-noFN'] = 0
-        return np.abs(simulatedcdfyear['ckz-noFN'].sum()-(simulatedcdfyear['ckz'].sum()-governmentSubsidyTotal)) 
+        simYear_df['ckz-noFN'] = simYear_df['final-demand-noFN'] * \
+            (1 - extraFactor *
+             simYear_df['adjustment-factor']) - simYear_df['income-noFN']
+        simYear_df.loc[simYear_df['ckz-noFN'] < 0, 'ckz-noFN'] = 0
+        return np.abs(simYear_df['ckz-noFN'].sum()-(simYear_df['ckz'].sum()-governmentSubsidyTotal))
 
     res = minimize(ckzConstraint, 1)
     extraAdjFactorFound = res.x
-    simulatedcdfyear['adjustment-factor-noFN'] = extraAdjFactorFound*simulatedcdfyear['adjustment-factor']
-    simulatedcdfyear['ckz-noFN'] = simulatedcdfyear['final-demand-noFN'] * (1- simulatedcdfyear['adjustment-factor-noFN']) - simulatedcdfyear['income-noFN']
-    simulatedcdfyear.loc[simulatedcdfyear['ckz-noFN']<0,'ckz-noFN'] = 0
-    #assert(np.abs(1-simulatedcdfyear['ckz-noFN'].sum()/simulatedcdfyear['ckz'].sum())<0.001)
-    
-    simulatedcdfyear['ckz-noFN'].sum()/simulatedcdfyear['ckz'].sum()
+    simYear_df['adjustment-factor-noFN'] = extraAdjFactorFound * \
+        simYear_df['adjustment-factor']
+    simYear_df['ckz-noFN'] = simYear_df['final-demand-noFN'] * \
+        (1 - simYear_df['adjustment-factor-noFN']) - simYear_df['income-noFN']
+    simYear_df.loc[simYear_df['ckz-noFN'] < 0, 'ckz-noFN'] = 0
+    assert(np.abs(1-(simYear_df['ckz-noFN'].sum() +
+           governmentSubsidyTotal)/simYear_df['ckz'].sum()) < 0.001)
 
-    # In principle if the money is subsidized most places should get more ckz with FN than without, since FN decreases their income.
-    myFNeffect = (simulatedcdfyear['ckz']-simulatedcdfyear['ckz-noFN'])
+    return simYear_df
 
-    print(len(simulatedcdfyear.loc[myFNeffect>0]), ' places would lose CKZ money if FN ends')
-    print('their ESI is ', simulatedcdfyear.loc[myFNeffect>0,'economic-strength-index-prev3yearavg'].mean())
-    print(len(simulatedcdfyear.loc[myFNeffect<0]), ' places would gain CKZ money if FN ends')
-    print('their ESI is ', simulatedcdfyear.loc[myFNeffect<0,'economic-strength-index-prev3yearavg'].mean())
-    print(len(simulatedcdfyear.loc[myFNeffect==0]), ' places + tokyo would see no difference')
-    print('their ESI is ',  simulatedcdfyear.loc[myFNeffect==0,'economic-strength-index-prev3yearavg'].mean())
 
-    totalFNeffect = (simulatedcdfyear['netgainminusdeductions']+simulatedcdfyear['ckz']-simulatedcdfyear['ckz-noFN'])
+def do_fn_sim(year_df):
+    """ Take all the data which includes -noFN cols adds cols which include fn (no suffix)
+    """
 
-    print(len(simulatedcdfyear.loc[totalFNeffect>0]), ' places would lose total money if FN ends')
-    print('their ESI is ', simulatedcdfyear.loc[totalFNeffect>0,'economic-strength-index-prev3yearavg'].mean())
-    print(len(simulatedcdfyear.loc[totalFNeffect<0]), ' places would gain total money if FN ends')
-    print('their ESI is ', simulatedcdfyear.loc[totalFNeffect<0,'economic-strength-index-prev3yearavg'].mean())
-    print(len(simulatedcdfyear.loc[totalFNeffect==0]), ' places would see no difference')
-    print('their ESI is ',  simulatedcdfyear.loc[totalFNeffect==0,'economic-strength-index-prev3yearavg'].mean())
+    estimateYear_df = year_df.copy()
 
-    simulatedcdfyear.loc[simulatedcdfyear['netgainminusdeductions']<0]
-    
-    output_df_year = simulatedcdfyear[['prefecture', 'code', 'ckz', 'ckz-noFN','economic-strength-index-prev3yearavg']].copy()
-    ## re-add tokyo 23 this is easy since they just get no ckz
+    estimateYear_df['income'] = estimateYear_df['income-noFN'] - \
+        0.75*estimateYear_df['deductions']
+
+    if shortfall[simReferenceYear+2] > 0:
+        subsidyFraction = 0.5
+    else:
+        subsidyFraction = 0
+    print('Using subsidy fraction', subsidyFraction)
+    governmentSubsidyTotal = subsidyFraction * 0.75 * \
+        estimateYear_df['deductions'].sum()  # For testing purposes
+
+    # Find a uniform scaling of the debt-scaling-factors without nozei such that with the nouzei we still get the right total ckz-preAdj
+    from scipy.optimize import minimize
+
+    def ckzPreAdjConstraint(extraFactor):
+        estimateYear_df['special-debt'] = (extraFactor*estimateYear_df['debt-scaling-factor-noFN']*(
+            estimateYear_df['demand-pre-debt']-estimateYear_df['income'])*estimateYear_df['economic-strength-index-prev3yearavg'])
+        estimateYear_df['final-demand'] = estimateYear_df['demand-pre-debt'] - \
+            estimateYear_df['special-debt']
+        estimateYear_df['ckz-preAdj'] = estimateYear_df['final-demand'] - \
+            estimateYear_df['income']
+        estimateYear_df.loc[estimateYear_df['ckz-preAdj']
+                            < 0, 'ckz-preAdj'] = 0
+        return np.abs(estimateYear_df['ckz-preAdj-noFN'].sum() - (estimateYear_df['ckz-preAdj'].sum() - governmentSubsidyTotal))
+
+    res = minimize(ckzPreAdjConstraint, 1)
+    extraDebtFactorFound = res.x
+    estimateYear_df['debt-scaling-factor'] = extraDebtFactorFound * \
+        estimateYear_df['debt-scaling-factor-noFN']
+
+    estimateYear_df['special-debt'] = estimateYear_df['debt-scaling-factor'] * \
+        (estimateYear_df['demand-pre-debt']-estimateYear_df['income']
+         )*estimateYear_df['economic-strength-index-prev3yearavg']
+    estimateYear_df['final-demand'] = estimateYear_df['demand-pre-debt'] - \
+        estimateYear_df['special-debt']
+    estimateYear_df['ckz-preAdj'] = estimateYear_df['final-demand'] - \
+        estimateYear_df['income']
+    estimateYear_df.loc[estimateYear_df['ckz-preAdj'] < 0, 'ckz-preAdj'] = 0
+    assert(np.abs(1-(estimateYear_df['ckz-preAdj-noFN'].sum() +
+           governmentSubsidyTotal)/estimateYear_df['ckz-preAdj'].sum()) < 0.001)
+
+    # Now do the same for the adjustment factor.
+    # Find a uniform scaling of the adjustment-factors such that with the nouzei undone we still get the right total ckz
+    def ckzConstraint(extraFactor):
+        estimateYear_df['ckz'] = estimateYear_df['final-demand'] * (
+            1 - extraFactor * estimateYear_df['adjustment-factor-noFN']) - estimateYear_df['income']
+        estimateYear_df.loc[estimateYear_df['ckz'] < 0, 'ckz'] = 0
+        return np.abs(estimateYear_df['ckz-noFN'].sum()-(estimateYear_df['ckz'].sum()-governmentSubsidyTotal))
+
+    res = minimize(ckzConstraint, 1)
+    extraAdjFactorFound = res.x
+    estimateYear_df['adjustment-factor'] = extraAdjFactorFound * \
+        estimateYear_df['adjustment-factor-noFN']
+    estimateYear_df['ckz'] = estimateYear_df['final-demand'] * \
+        (1 - estimateYear_df['adjustment-factor']) - estimateYear_df['income']
+    estimateYear_df.loc[estimateYear_df['ckz'] < 0, 'ckz'] = 0
+    assert(np.abs(1-(estimateYear_df['ckz-noFN'].sum() +
+           governmentSubsidyTotal)/estimateYear_df['ckz'].sum()) < 0.001)
+
+    return estimateYear_df
+
+
+# LOCAL SIM
+sim_df = pd.DataFrame()
+simYears = list(range(np.min(fdf.year), np.max(cdf.year)-2+1))
+for year in simYears:
+    # This is +2 because donations are made in year X, decline in income is reported in year X+1, and then compensation occurs in X+2年度. Implement an estimation of the effect by using the last year's average or something...
+    chihoukoufuzeiyear = year+2
+    print(year)
+    fdfyear = fdf.loc[fdf.year == year].drop('year', axis=1)
+    cdfyear = cdf.loc[cdf.year == chihoukoufuzeiyear].drop('year', axis=1)
+    # get rid of the prefectures and tokyo23
+    fdfyear = fdfyear.drop(fdfyear.loc[fdfyear['city'] == 'prefecture'].index).drop(
+        fdfyear.loc[(fdfyear['prefecture'] == '東京都') & (fdfyear['city']).str.contains('区')].index)
+    cdfyear = cdfyear.drop(cdfyear.loc[(cdfyear['prefecture'] == '東京都') & (
+        cdfyear['city']).str.contains('区')].index)
+    assert(len(cdfyear) == len(fdfyear))
+    year_df = cdfyear.merge(
+        fdfyear, on=['prefecture', 'code'], validate='one_to_one', suffixes=['', '_fdf'])
+
+    simYear_df = undo_fn_sim(year_df)
+
     tokyo23codes = [str(13101 + i) for i in range(23)]
-    tokyo23df = pd.DataFrame(tokyo23codes,columns=['code'])
+    tokyo23df = pd.DataFrame(tokyo23codes, columns=['code'])
     tokyo23df['ckz'] = 0
     tokyo23df['ckz-noFN'] = 0
     tokyo23df['prefecture'] = '東京都'
     tokyo23df['economic-strength-index-prev3yearavg'] = np.nan
-    output_df_year = pd.concat([output_df_year,tokyo23df])
-    output_df_year['year'] = year
+    simYear_df = pd.concat([simYear_df, tokyo23df])
+    simYear_df['year'] = int(year)
 
-    output_df = pd.concat([output_df,output_df_year])
+    sim_df = pd.concat([sim_df, simYear_df])
 
-ckz_sim_df = output_df 
+estimate_df = pd.DataFrame()
+estimateYears = list(range(np.max(cdf.year)-1, np.max(fdf.year)+1))
+simReferenceYear = np.max(sim_df['year'])
 
-### Here I want to do some checks of ckz time trends to see whether its a good assumption to assume ckz in R5 is like R4,
-### and how minimal can I make the assumptions
-###
+# 2016,2017,
+# for simReferenceYear in [2018,2019,2020]:
+#     print(simReferenceYear)
+for year in estimateYears:
+    referenceSim = sim_df.loc[(sim_df['year'] == simReferenceYear) & ~sim_df['code'].isin(tokyo23codes)].reset_index(drop=True).drop('year', axis=1)[['prefecture', 'code', 'ckz-noFN',
+                                                                                                                                                      'ckz-preAdj-noFN', 'special-debt-noFN', 'income-noFN', 'demand-pre-debt', 'final-demand-noFN', 'debt-scaling-factor-noFN', 'adjustment-factor-noFN', 'economic-strength-index-prev3yearavg']]
+    fdfyear = fdf.loc[fdf.year == year].drop('year', axis=1)
+    # get rid of the prefectures and tokyo23
+    fdfyear = fdfyear.drop(fdfyear.loc[fdfyear['city'] == 'prefecture'].index).drop(fdfyear.loc[(
+        fdfyear['prefecture'] == '東京都') & (fdfyear['city']).str.contains('区')].index).reset_index(drop=True)
+    year_df = referenceSim.merge(
+        fdfyear, on=['prefecture', 'code'], validate='one_to_one', suffixes=['', '_fdf'])
+    assert(len(fdfyear) == len(year_df))
 
-## First some global checks
-fig, ax = cb.handlers()
-ax.plot(cdf.year.unique(),cdf.groupby('year').sum()['ckz'],label='ckz')
-#ax.plot(cdf.year.unique(),cdf.groupby('year').sum()['income'],label='income')
-#ax.plot(cdf.year.unique(),cdf.groupby('year').sum()['final-demand'],label='final-demand')
-#ax.plot(cdf.year.unique(),cdf.groupby('year').sum()['demand-pre-debt'],label='demand-pre-debt')
-ax.legend()
-fig.savefig('./simplots/muni-ckz-over-time.pdf')
-plt.close('all')
+    estimateYear_df = do_fn_sim(year_df)
 
-## Now pick a random city and do some checks
-code = np.random.choice(cdf['code'].unique())
-citydf = cdf.loc[cdf['code']==code].sort_values('year')
-print(citydf['city'].values[0],citydf['prefecture'].values[0])
-fig, ax = cb.handlers()
-ax.plot(citydf.year,citydf['ckz'],label='ckz')
-ax.plot(citydf.year,citydf['income'],label='income')
-ax.plot(citydf.year,citydf['final-demand'],label='final-demand')
-ax.plot(citydf.year,citydf['demand-pre-debt'],label='demand-pre-debt')
-ax.legend()
-fig.savefig('./simplots/random-city-ckz-over-time.pdf')
-plt.close('all')
+    tokyo23codes = [str(13101 + i) for i in range(23)]
+    tokyo23df = pd.DataFrame(tokyo23codes, columns=['code'])
+    tokyo23df['ckz'] = 0
+    tokyo23df['ckz-noFN'] = 0
+    tokyo23df['prefecture'] = '東京都'
+    tokyo23df['economic-strength-index-prev3yearavg'] = np.nan
+    estimateYear_df = pd.concat([estimateYear_df, tokyo23df])
+    estimateYear_df['year'] = int(year)
+
+    estimate_df = pd.concat([estimate_df, estimateYear_df])
+
+    #print('typical effect', np.median(np.abs(estimateYear_df['ckz-noFN']-estimateYear_df['ckz']))/10**8)
+
+sim_df = sim_df.drop(['deficit-or-surplus',
+                      'special-debt-rollover',
+                     'total-debt-rollover',
+                      'ckz-pre-rev',
+                      'economic-strength-index',
+                      'city_fdf'], axis=1)
+
+ckz_sim_df = pd.concat([sim_df, estimate_df])
+
 ########################
 ###### PREF SIM ########
 ########################
 
-output_pref_df = pd.DataFrame()
-simStartYear = np.min(fdf.year)
-simEndYear =  np.max(cdf_pref.year)-1
-for year in range(simStartYear, simEndYear+1):
-    chihoukoufuzeiyear = year+1 #TODO: ACTUALLY THIS SHOULD BE +2. Donations are made in year X, decline in income is reported in year X+1, and then compensation occurs in X+2年度. Implement an estimation of the effect by using the last year's average or something...
+sim_df = pd.DataFrame()
+simYears = list(range(np.min(fdf.year), np.max(cdf.year)-2+1))
+for year in simYears:
+    # This is +2 because donations are made in year X, decline in income is reported in year X+1, and then compensation occurs in X+2年度. Implement an estimation of the effect by using the last year's average or something...
+    chihoukoufuzeiyear = year+2
     print(year)
-    fdfyear = fdf.loc[fdf.year == year]
-    ## keep only the prefectures 
-    fdfyear = fdfyear.drop(fdfyear.loc[fdfyear['city']!='prefecture'].index)
-    cdfyear = cdf_pref.loc[cdf_pref.year == chihoukoufuzeiyear]
+    fdfyear = fdf.loc[fdf.year == year].drop('year', axis=1)
+    cdfyear = cdf_pref.loc[cdf_pref.year ==
+                           chihoukoufuzeiyear].drop('year', axis=1)
+    # keep only the prefectures
+    fdfyear = fdfyear.drop(fdfyear.loc[fdfyear['city'] != 'prefecture'].index)
+    year_df = cdfyear.merge(
+        fdfyear, on=['prefecture'], validate='one_to_one', suffixes=['', '_fdf'])
     assert(len(cdfyear) == len(fdfyear))
+    assert(len(year_df) == len(fdfyear))
 
-    simulatedcdfyear = cdfyear.copy()
-    simulatedcdfyear = simulatedcdfyear.merge(fdfyear,on=['prefecture'],validate='one_to_one', suffixes=['','_fdf'])
-    simulatedcdfyear['ckz-preAdj'] = simulatedcdfyear['final-demand']-simulatedcdfyear['income'] ## Amount of ckz before final adjustment
-    simulatedcdfyear.loc[simulatedcdfyear['ckz-preAdj']<0,'ckz-preAdj'] = 0 ## ckz cant be negative
+    simYear_df = undo_fn_sim(year_df)
 
-    simulatedcdfyear.loc[simulatedcdfyear['economic-strength-index-prev3yearavg'].isna(),'economic-strength-index-prev3yearavg'] = simulatedcdfyear['economic-strength-index'] ## For places without a 3-year ESI, use current year ESI
+    simYear_df['year'] = int(year)
 
-    ## The debt scaling constant that was used for each pref in practice
-    simulatedcdfyear['debt-scaling-factor'] = simulatedcdfyear['special-debt']/(simulatedcdfyear['demand-pre-debt']-simulatedcdfyear['income'])/simulatedcdfyear['economic-strength-index-prev3yearavg']
-    # The adjustment factor that was used to reduce the final demand and get the ckz
-    simulatedcdfyear['adjustment-factor'] =  1-(simulatedcdfyear['ckz']+simulatedcdfyear['income'])/simulatedcdfyear['final-demand']
-    simulatedcdfyear.loc[simulatedcdfyear['ckz']==0,'adjustment-factor'] = 0
+    print('typical effect', np.median(
+        np.abs(simYear_df['ckz-noFN']-simYear_df['ckz']))/10**8)
 
-    ## Now to undo the FN effect add back 0.75*deductions
-    simulatedcdfyear['income-noFN'] = simulatedcdfyear['income']+0.75*simulatedcdfyear['deductions']
-    ## With this higher income, recompute how much debt they would have been allowed to issue
+    sim_df = pd.concat([sim_df, simYear_df])
 
-    if shortfall[chihoukoufuzeiyear]>0:
-        subsidyFraction = 0.5
-    else:
-        subsidyFraction = 0
-    print('Using subsidy fraction', subsidyFraction)
-    governmentSubsidyTotal = subsidyFraction* 0.75*simulatedcdfyear['deductions'].sum() ## For testing purposes
+estimate_df = pd.DataFrame()
+estimateYears = list(range(np.max(cdf.year)-1, np.max(fdf.year)+1))
+simReferenceYear = np.max(sim_df['year'])
 
-    ## Find a uniform scaling of the debt-scaling-factors such that with the nouzei undone we still get the right total ckz-preAdj
-    from scipy.optimize import minimize
-    def ckzPreAdjConstraint(extraFactor):
-        simulatedcdfyear['special-debt-noFN'] =  (extraFactor*simulatedcdfyear['debt-scaling-factor']*(simulatedcdfyear['demand-pre-debt']-simulatedcdfyear['income-noFN'])*simulatedcdfyear['economic-strength-index-prev3yearavg'])
-        simulatedcdfyear['final-demand-noFN'] = simulatedcdfyear['demand-pre-debt']-simulatedcdfyear['special-debt-noFN']
-        simulatedcdfyear['ckz-preAdj-noFN'] = simulatedcdfyear['final-demand-noFN']-simulatedcdfyear['income-noFN'] 
-        simulatedcdfyear.loc[simulatedcdfyear['ckz-preAdj-noFN']<0,'ckz-preAdj-noFN'] = 0
-        return np.abs(simulatedcdfyear['ckz-preAdj-noFN'].sum() - (simulatedcdfyear['ckz-preAdj'].sum() - governmentSubsidyTotal))
+# 2016,2017,
+# for simReferenceYear in [2018,2019,2020]:
+#     print(simReferenceYear)
+for year in estimateYears:
+    referenceSim = sim_df.loc[(sim_df['year'] == simReferenceYear)].reset_index(drop=True).drop('year', axis=1)[['prefecture', 'ckz-noFN', 'ckz-preAdj-noFN', 'special-debt-noFN',
+                                                                                                                 'income-noFN', 'demand-pre-debt', 'final-demand-noFN', 'debt-scaling-factor-noFN', 'adjustment-factor-noFN', 'economic-strength-index-prev3yearavg']]
+    fdfyear = fdf.loc[fdf.year == year].drop('year', axis=1)
+    # keep only the prefectures
+    fdfyear = fdfyear.drop(fdfyear.loc[fdfyear['city'] != 'prefecture'].index)
+    year_df = referenceSim.merge(
+        fdfyear, on=['prefecture'], validate='one_to_one', suffixes=['', '_fdf'])
+    assert(len(fdfyear) == len(cdfyear))
+    assert(len(year_df) == len(fdfyear))
 
-    res = minimize(ckzPreAdjConstraint, 1)
-    extraDebtFactorFound = res.x
-    simulatedcdfyear['debt-scaling-factor-noFN'] = extraDebtFactorFound*simulatedcdfyear['debt-scaling-factor']
-    simulatedcdfyear['special-debt-noFN'] =  (simulatedcdfyear['debt-scaling-factor-noFN']*(simulatedcdfyear['demand-pre-debt']-simulatedcdfyear['income-noFN'])*simulatedcdfyear['economic-strength-index-prev3yearavg'])
-    simulatedcdfyear['final-demand-noFN'] = simulatedcdfyear['demand-pre-debt']-simulatedcdfyear['special-debt-noFN']
-    simulatedcdfyear['ckz-preAdj-noFN'] = simulatedcdfyear['final-demand-noFN']-simulatedcdfyear['income-noFN'] 
-    simulatedcdfyear.loc[simulatedcdfyear['ckz-preAdj-noFN']<0,'ckz-preAdj-noFN'] = 0
-    #assert(np.abs(1-simulatedcdfyear['ckz-preAdj-noFN'].sum()/simulatedcdfyear['ckz-preAdj'].sum())<0.001)
+    estimateYear_df = do_fn_sim(year_df)
 
-    ## Now do the same for the adjustment factor.
-    ## Find a uniform scaling of the adjustment-factors such that with the nouzei undone we still get the right total ckz
-    def ckzConstraint(extraFactor):
-        simulatedcdfyear['ckz-noFN'] = simulatedcdfyear['final-demand-noFN'] * (1- extraFactor * simulatedcdfyear['adjustment-factor']) - simulatedcdfyear['income-noFN']
-        simulatedcdfyear.loc[simulatedcdfyear['ckz-noFN']<0,'ckz-noFN'] = 0
-        return np.abs(simulatedcdfyear['ckz-noFN'].sum()-(simulatedcdfyear['ckz'].sum()-governmentSubsidyTotal)) 
+    estimateYear_df['year'] = int(year)
 
-    res = minimize(ckzConstraint, 1)
-    extraAdjFactorFound = res.x
-    simulatedcdfyear['adjustment-factor-noFN'] = extraAdjFactorFound*simulatedcdfyear['adjustment-factor']
-    simulatedcdfyear['ckz-noFN'] = simulatedcdfyear['final-demand-noFN'] * (1- simulatedcdfyear['adjustment-factor-noFN']) - simulatedcdfyear['income-noFN']
-    simulatedcdfyear.loc[simulatedcdfyear['ckz-noFN']<0,'ckz-noFN'] = 0
-    #assert(np.abs(1-simulatedcdfyear['ckz-noFN'].sum()/simulatedcdfyear['ckz'].sum())<0.001)
-    
-    simulatedcdfyear['ckz-noFN'].sum()/simulatedcdfyear['ckz'].sum()
+    estimate_df = pd.concat([estimate_df, estimateYear_df])
 
-    # In principle if the money is subsidized most places should get more ckz with FN than without, since FN decreases their income.
-    myFNeffect = (simulatedcdfyear['ckz']-simulatedcdfyear['ckz-noFN'])
+    print('typical effect', np.median(
+        np.abs(estimateYear_df['ckz-noFN']-estimateYear_df['ckz']))/10**8)
 
-    print(len(simulatedcdfyear.loc[myFNeffect>0]), ' places would lose CKZ money if FN ends')
-    print('their ESI is ', simulatedcdfyear.loc[myFNeffect>0,'economic-strength-index-prev3yearavg'].mean())
-    print(len(simulatedcdfyear.loc[myFNeffect<0]), ' places would gain CKZ money if FN ends')
-    print('their ESI is ', simulatedcdfyear.loc[myFNeffect<0,'economic-strength-index-prev3yearavg'].mean())
-    print(len(simulatedcdfyear.loc[myFNeffect==0]), ' places + tokyo would see no difference')
-    print('their ESI is ',  simulatedcdfyear.loc[myFNeffect==0,'economic-strength-index-prev3yearavg'].mean())
+sim_df = sim_df.drop([
+    'special-debt-rollover',
+    'total-debt-rollover',
+    'economic-strength-index', ], axis=1)
 
-    totalFNeffect = (simulatedcdfyear['netgainminusdeductions']+simulatedcdfyear['ckz']-simulatedcdfyear['ckz-noFN'])
+ckz_pref_sim_df = pd.concat([sim_df, estimate_df])
 
-    print(len(simulatedcdfyear.loc[totalFNeffect>0]), ' places would lose total money if FN ends')
-    print('their ESI is ', simulatedcdfyear.loc[totalFNeffect>0,'economic-strength-index-prev3yearavg'].mean())
-    print(len(simulatedcdfyear.loc[totalFNeffect<0]), ' places would gain total money if FN ends')
-    print('their ESI is ', simulatedcdfyear.loc[totalFNeffect<0,'economic-strength-index-prev3yearavg'].mean())
-    print(len(simulatedcdfyear.loc[totalFNeffect==0]), ' places would see no difference')
-    print('their ESI is ',  simulatedcdfyear.loc[totalFNeffect==0,'economic-strength-index-prev3yearavg'].mean())
-    
-    output_df_year = simulatedcdfyear[['prefecture', 'ckz', 'ckz-noFN','economic-strength-index-prev3yearavg']].copy()
-    output_df_year['year'] = year
+if __name__ == "__main__":
 
-    output_pref_df = pd.concat([output_pref_df,output_df_year])
+    print('municipal stats')
+    for year in ckz_sim_df.year.unique():
+        print(year)
+        df = ckz_sim_df.loc[ckz_sim_df['year'] == year]
+        # In principle if the money is subsidized most places should get more ckz with FN than without, since FN decreases their income.
+        myFNeffect = (df['ckz']-df['ckz-noFN'])
 
-ckz_sim_pref_df = output_pref_df 
+        print(len(df.loc[myFNeffect > 0]),
+              ' places would lose CKZ money if FN ends')
+        print('their ESI is ', df.loc[myFNeffect > 0,
+              'economic-strength-index-prev3yearavg'].mean())
+        print(len(df.loc[myFNeffect < 0]),
+              ' places would gain CKZ money if FN ends')
+        print('their ESI is ', df.loc[myFNeffect < 0,
+              'economic-strength-index-prev3yearavg'].mean())
+        print(len(df.loc[myFNeffect == 0]),
+              ' places + tokyo would see no difference')
+        print('their ESI is ',  df.loc[myFNeffect == 0,
+              'economic-strength-index-prev3yearavg'].mean())
 
-## Next steps 
-## Look at whether there is a rollover effect from the debt in the following year.
-## Look at how the subsidy money is distributed -- actually put into the same futsuu money pool? 
+        totalFNeffect = (df['netgainminusdeductions']+df['ckz']-df['ckz-noFN'])
 
+        print(len(df.loc[totalFNeffect > 0]),
+              ' places would lose total money if FN ends')
+        print('their ESI is ', df.loc[totalFNeffect > 0,
+              'economic-strength-index-prev3yearavg'].mean())
+        print(len(df.loc[totalFNeffect < 0]),
+              ' places would gain total money if FN ends')
+        print('their ESI is ', df.loc[totalFNeffect < 0,
+              'economic-strength-index-prev3yearavg'].mean())
+        print(len(df.loc[totalFNeffect == 0]),
+              ' places would see no difference')
+        print('their ESI is ',  df.loc[totalFNeffect == 0,
+              'economic-strength-index-prev3yearavg'].mean())
 
+        print('typical effect', np.median(
+            np.abs(df['ckz-noFN']-df['ckz']))/10**8)
+
+    print('prefectural stats')
+    for year in ckz_pref_sim_df.year.unique():
+        print(year)
+        df = ckz_pref_sim_df.loc[ckz_pref_sim_df['year'] == year]
+        # In principle if the money is subsidized most places should get more ckz with FN than without, since FN decreases their income.
+        myFNeffect = (df['ckz']-df['ckz-noFN'])
+
+        print(len(df.loc[myFNeffect > 0]),
+              ' places would lose CKZ money if FN ends')
+        print('their ESI is ', df.loc[myFNeffect > 0,
+              'economic-strength-index-prev3yearavg'].mean())
+        print(len(df.loc[myFNeffect < 0]),
+              ' places would gain CKZ money if FN ends')
+        print('their ESI is ', df.loc[myFNeffect < 0,
+              'economic-strength-index-prev3yearavg'].mean())
+        print(len(df.loc[myFNeffect == 0]), ' places would see no difference')
+        print('their ESI is ',  df.loc[myFNeffect == 0,
+              'economic-strength-index-prev3yearavg'].mean())
+
+        totalFNeffect = (df['netgainminusdeductions']+df['ckz']-df['ckz-noFN'])
+
+        print(len(df.loc[totalFNeffect > 0]),
+              ' places would lose total money if FN ends')
+        print('their ESI is ', df.loc[totalFNeffect > 0,
+              'economic-strength-index-prev3yearavg'].mean())
+        print(len(df.loc[totalFNeffect < 0]),
+              ' places would gain total money if FN ends')
+        print('their ESI is ', df.loc[totalFNeffect < 0,
+              'economic-strength-index-prev3yearavg'].mean())
+        print(len(df.loc[totalFNeffect == 0]),
+              ' places would see no difference')
+        print('their ESI is ',  df.loc[totalFNeffect == 0,
+              'economic-strength-index-prev3yearavg'].mean())
+
+        print('typical effect', np.median(
+            np.abs(df['ckz-noFN']-df['ckz']))/10**8)
+
+    # Here I want to do some checks of ckz time trends to see whether its a good assumption to assume ckz in R5 is like R4,
+    # and how minimal can I make the assumptions
+    ###
+    cb = CircusBoy()
+
+    # First some global checks
+    fig, ax = cb.handlers()
+    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['ckz'],label='ckz')
+    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['income'],label='income')
+    ax.plot(ckz_sim_df.year.unique(), ckz_sim_df.groupby(
+        'year').sum()['income-noFN'], label='income no FN')
+
+    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['final-demand'],label='final-demand')
+    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['demand-pre-debt'],label='demand-pre-debt')
+    ax.legend()
+    fig.savefig('./simplots/muni-ckz-over-time.pdf')
+    plt.close('all')
+
+    # Income focused checks
+    fig, ax = cb.handlers()
+    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['ckz'],label='ckz')
+    ax.plot(ckz_sim_df.year.unique(), ckz_sim_df.groupby('year').sum()[
+            'income-noFN']-ckz_sim_df.groupby('year').sum()['income'], label='income-noFN-minus-income')
+    ax.plot(ckz_sim_df.year.unique(), 0.75*ckz_sim_df.groupby('year').sum()
+            ['deductions'], ls='--', label='0.75 deductions')
+    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['final-demand'],label='final-demand')
+    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['demand-pre-debt'],label='demand-pre-debt')
+    ax.legend()
+    fig.savefig('./simplots/muni-income-over-time.pdf')
+    plt.close('all')
+
+    # Now pick a random city and do some checks
+    code = np.random.choice(ckz_sim_df['code'].unique())
+    citydf = ckz_sim_df.loc[ckz_sim_df['code'] == code].sort_values('year')
+    print(citydf['city'].values[0], citydf['prefecture'].values[0])
+    fig, ax = cb.handlers()
+    # ax.plot(citydf.year,citydf['ckz'],label='ckz')
+    # ax.plot(citydf.year,citydf['income'],label='income')
+    # ax.plot(citydf.year,citydf['final-demand'],label='final-demand')
+    # ax.plot(citydf.year,citydf['demand-pre-debt'],label='demand-pre-debt')
+    # ax.plot(citydf.year,citydf['adjustment-factor'],label='adjustment-factor')
+    ax.plot(citydf.year, citydf['debt-scaling-factor'],
+            label='debt-scaling-factor')
+    ax.legend()
+    fig.savefig('./simplots/random-city-over-time.pdf')
+    plt.close('all')
+
+    # Now pick a few random cities and do some checks
+    codes = np.random.choice(ckz_sim_df['code'].unique(), 10, replace=False)
+    fig, ax = cb.handlers()
+    for code in codes:
+        citydf = ckz_sim_df.loc[ckz_sim_df['code'] == code].sort_values('year')
+        print(citydf['city'].values[0], citydf['prefecture'].values[0])
+        #ax.plot(citydf.year,citydf['ckz']/citydf['ckz'].values[0],label='ckz', alpha=.5)
+        #ax.plot(citydf.year,citydf['income']/citydf['income'].values[0],label='income', alpha=.5)
+        #ax.plot(citydf.year,citydf['final-demand']/citydf['final-demand'].values[0],label='final-demand', alpha=.5)
+        #ax.plot(citydf.year,citydf['demand-pre-debt']/citydf['demand-pre-debt'].values[0],label='demand-pre-debt', alpha=.5)
+        #ax.plot(citydf.year,citydf['debt-scaling-factor']/citydf['debt-scaling-factor'].values[0],label='debt-scaling-factor', alpha=.5)
+        ax.plot(citydf.year, citydf['debt-scaling-factor'].values/(ckz_sim_df.groupby(
+            'year').mean()['debt-scaling-factor']).values, label='debt-scaling-factor', alpha=.5)
+        #ax.plot(citydf.year,citydf['adjustment-factor']/citydf['adjustment-factor'].values[0],label='adjustment-factor', alpha=.5)
+    # ax.legend()
+    fig.savefig('./simplots/random-cities-over-time.pdf')
+    plt.close('all')
+else:
+    ckz_sim_df = ckz_sim_df[['prefecture', 'code', 'year', 'ckz', 'ckz-noFN']]
+    ckz_pref_sim_df = ckz_pref_sim_df[[
+        'prefecture', 'year', 'ckz', 'ckz-noFN']]
