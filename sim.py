@@ -28,7 +28,6 @@ chou = 10**12
 shortfall = {2022: 0*chou, 2021: 1.7*2*chou, 2020: 0*chou, 2019: 0*chou,
              2018: .2*2*chou, 2017: .7*2*chou, 2016: .3*2*chou, 2015: 1.5*2*chou}
 
-
 def undo_fn_sim(year_df):
     """ Take all the data which includes FN and add -noFN cols
     """
@@ -184,8 +183,9 @@ def do_fn_sim(year_df):
 
     return estimateYear_df
 
-
-# LOCAL SIM
+############### ###
+# MUNICIPAL SIM ###
+############### ###
 sim_df = pd.DataFrame()
 simYears = list(range(np.min(fdf.year), np.max(cdf.year)-2+1))
 for year in simYears:
@@ -199,10 +199,18 @@ for year in simYears:
         fdfyear.loc[(fdfyear['prefecture'] == '東京都') & (fdfyear['city']).str.contains('区')].index)
     cdfyear = cdfyear.drop(cdfyear.loc[(cdfyear['prefecture'] == '東京都') & (
         cdfyear['city']).str.contains('区')].index)
-    assert(len(cdfyear) == len(fdfyear))
+    assert(len(cdfyear) == len(fdfyear))  
+    if year in [2017]:
+        cdfyear.loc[cdfyear['code'] == '40231','code'] = '40305' 
     year_df = cdfyear.merge(
         fdfyear, on=['prefecture', 'code'], validate='one_to_one', suffixes=['', '_fdf'])
-
+    assert(len(year_df) == len(fdfyear))
+    fdfyear.loc[~fdfyear['code'].isin(year_df['code']),'code']
+    # fdfyear.loc[fdfyear['city']=='那珂川市','code']
+    # cdfyear.loc[cdfyear['city']=='那珂川市','code']
+    # fdf.loc[fdf['city']=='那珂川市','code']
+    # cdf.loc[cdf['city']=='那珂川市','code']
+    # cdf.loc[cdf['code'] == '40305']
     simYear_df = undo_fn_sim(year_df)
 
     tokyo23codes = [str(13101 + i) for i in range(23)]
@@ -256,7 +264,7 @@ sim_df = sim_df.drop(['deficit-or-surplus',
                       'economic-strength-index',
                       'city_fdf'], axis=1)
 
-ckz_sim_df = pd.concat([sim_df, estimate_df])
+ckz_muni_sim_df = pd.concat([sim_df, estimate_df])
 
 ########################
 ###### PREF SIM ########
@@ -271,14 +279,24 @@ for year in simYears:
     fdfyear = fdf.loc[fdf.year == year].drop('year', axis=1)
     cdfyear = cdf_pref.loc[cdf_pref.year ==
                            chihoukoufuzeiyear].drop('year', axis=1)
-    # keep only the prefectures
-    fdfyear = fdfyear.drop(fdfyear.loc[fdfyear['city'] != 'prefecture'].index)
+    # keep only the prefectures, get rid of tokyo
+    fdfyear = fdfyear.drop(fdfyear.loc[(fdfyear['city'] != 'prefecture') | (fdfyear['prefecture'] == '東京都')].index)
+    cdfyear = cdfyear.drop(cdfyear.loc[(cdfyear['prefecture'] == '東京都')].index)
+
     year_df = cdfyear.merge(
         fdfyear, on=['prefecture'], validate='one_to_one', suffixes=['', '_fdf'])
     assert(len(cdfyear) == len(fdfyear))
     assert(len(year_df) == len(fdfyear))
 
     simYear_df = undo_fn_sim(year_df)
+
+    tokyocode = ['13000']
+    tokyodf = pd.DataFrame(tokyocode, columns=['code_fdf'])
+    tokyodf['ckz'] = 0
+    tokyodf['ckz-noFN'] = 0
+    tokyodf['prefecture'] = '東京都'
+    tokyodf['economic-strength-index-prev3yearavg'] = np.nan
+    simYear_df = pd.concat([simYear_df, tokyodf])
 
     simYear_df['year'] = int(year)
 
@@ -295,17 +313,27 @@ simReferenceYear = np.max(sim_df['year'])
 # for simReferenceYear in [2018,2019,2020]:
 #     print(simReferenceYear)
 for year in estimateYears:
-    referenceSim = sim_df.loc[(sim_df['year'] == simReferenceYear)].reset_index(drop=True).drop('year', axis=1)[['prefecture', 'ckz-noFN', 'ckz-preAdj-noFN', 'special-debt-noFN',
+    referenceSim = sim_df.loc[(sim_df['year'] == simReferenceYear)].reset_index(drop=True).drop('year', axis=1)[['prefecture', 'code_fdf','ckz-noFN', 'ckz-preAdj-noFN', 'special-debt-noFN',
                                                                                                                  'income-noFN', 'demand-pre-debt', 'final-demand-noFN', 'debt-scaling-factor-noFN', 'adjustment-factor-noFN', 'economic-strength-index-prev3yearavg']]
     fdfyear = fdf.loc[fdf.year == year].drop('year', axis=1)
-    # keep only the prefectures
-    fdfyear = fdfyear.drop(fdfyear.loc[fdfyear['city'] != 'prefecture'].index)
+    # keep only the prefectures, get rid of tokyo
+    fdfyear = fdfyear.drop(fdfyear.loc[(fdfyear['city'] != 'prefecture') | (fdfyear['prefecture'] == '東京都')].index)
+    cdfyear = cdfyear.drop(cdfyear.loc[(cdfyear['prefecture'] == '東京都')].index)
     year_df = referenceSim.merge(
         fdfyear, on=['prefecture'], validate='one_to_one', suffixes=['', '_fdf'])
     assert(len(fdfyear) == len(cdfyear))
     assert(len(year_df) == len(fdfyear))
 
     estimateYear_df = do_fn_sim(year_df)
+
+    tokyocode = ['13000']
+    tokyodf = pd.DataFrame(tokyocode, columns=['code_fdf'])
+    tokyodf['ckz'] = 0
+    tokyodf['ckz-noFN'] = 0
+    tokyodf['prefecture'] = '東京都'
+    tokyodf['economic-strength-index-prev3yearavg'] = np.nan
+    estimateYear_df = pd.concat([estimateYear_df, tokyodf])
+
 
     estimateYear_df['year'] = int(year)
 
@@ -324,9 +352,9 @@ ckz_pref_sim_df = pd.concat([sim_df, estimate_df])
 if __name__ == "__main__":
 
     print('municipal stats')
-    for year in ckz_sim_df.year.unique():
+    for year in ckz_muni_sim_df.year.unique():
         print(year)
-        df = ckz_sim_df.loc[ckz_sim_df['year'] == year]
+        df = ckz_muni_sim_df.loc[ckz_muni_sim_df['year'] == year]
         # In principle if the money is subsidized most places should get more ckz with FN than without, since FN decreases their income.
         myFNeffect = (df['ckz']-df['ckz-noFN'])
 
@@ -405,33 +433,33 @@ if __name__ == "__main__":
 
     # First some global checks
     fig, ax = cb.handlers()
-    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['ckz'],label='ckz')
-    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['income'],label='income')
-    ax.plot(ckz_sim_df.year.unique(), ckz_sim_df.groupby(
+    # ax.plot(ckz_muni_sim_df.year.unique(),ckz_muni_sim_df.groupby('year').sum()['ckz'],label='ckz')
+    # ax.plot(ckz_muni_sim_df.year.unique(),ckz_muni_sim_df.groupby('year').sum()['income'],label='income')
+    ax.plot(ckz_muni_sim_df.year.unique(), ckz_muni_sim_df.groupby(
         'year').sum()['income-noFN'], label='income no FN')
 
-    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['final-demand'],label='final-demand')
-    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['demand-pre-debt'],label='demand-pre-debt')
+    # ax.plot(ckz_muni_sim_df.year.unique(),ckz_muni_sim_df.groupby('year').sum()['final-demand'],label='final-demand')
+    # ax.plot(ckz_muni_sim_df.year.unique(),ckz_muni_sim_df.groupby('year').sum()['demand-pre-debt'],label='demand-pre-debt')
     ax.legend()
     fig.savefig('./simplots/muni-ckz-over-time.pdf')
     plt.close('all')
 
     # Income focused checks
     fig, ax = cb.handlers()
-    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['ckz'],label='ckz')
-    ax.plot(ckz_sim_df.year.unique(), ckz_sim_df.groupby('year').sum()[
-            'income-noFN']-ckz_sim_df.groupby('year').sum()['income'], label='income-noFN-minus-income')
-    ax.plot(ckz_sim_df.year.unique(), 0.75*ckz_sim_df.groupby('year').sum()
+    # ax.plot(ckz_muni_sim_df.year.unique(),ckz_muni_sim_df.groupby('year').sum()['ckz'],label='ckz')
+    ax.plot(ckz_muni_sim_df.year.unique(), ckz_muni_sim_df.groupby('year').sum()[
+            'income-noFN']-ckz_muni_sim_df.groupby('year').sum()['income'], label='income-noFN-minus-income')
+    ax.plot(ckz_muni_sim_df.year.unique(), 0.75*ckz_muni_sim_df.groupby('year').sum()
             ['deductions'], ls='--', label='0.75 deductions')
-    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['final-demand'],label='final-demand')
-    # ax.plot(ckz_sim_df.year.unique(),ckz_sim_df.groupby('year').sum()['demand-pre-debt'],label='demand-pre-debt')
+    # ax.plot(ckz_muni_sim_df.year.unique(),ckz_muni_sim_df.groupby('year').sum()['final-demand'],label='final-demand')
+    # ax.plot(ckz_muni_sim_df.year.unique(),ckz_muni_sim_df.groupby('year').sum()['demand-pre-debt'],label='demand-pre-debt')
     ax.legend()
     fig.savefig('./simplots/muni-income-over-time.pdf')
     plt.close('all')
 
     # Now pick a random city and do some checks
-    code = np.random.choice(ckz_sim_df['code'].unique())
-    citydf = ckz_sim_df.loc[ckz_sim_df['code'] == code].sort_values('year')
+    code = np.random.choice(ckz_muni_sim_df['code'].unique())
+    citydf = ckz_muni_sim_df.loc[ckz_muni_sim_df['code'] == code].sort_values('year')
     print(citydf['city'].values[0], citydf['prefecture'].values[0])
     fig, ax = cb.handlers()
     # ax.plot(citydf.year,citydf['ckz'],label='ckz')
@@ -446,23 +474,24 @@ if __name__ == "__main__":
     plt.close('all')
 
     # Now pick a few random cities and do some checks
-    codes = np.random.choice(ckz_sim_df['code'].unique(), 10, replace=False)
+    codes = np.random.choice(ckz_muni_sim_df['code'].unique(), 10, replace=False)
     fig, ax = cb.handlers()
     for code in codes:
-        citydf = ckz_sim_df.loc[ckz_sim_df['code'] == code].sort_values('year')
+        citydf = ckz_muni_sim_df.loc[ckz_muni_sim_df['code'] == code].sort_values('year')
         print(citydf['city'].values[0], citydf['prefecture'].values[0])
         #ax.plot(citydf.year,citydf['ckz']/citydf['ckz'].values[0],label='ckz', alpha=.5)
         #ax.plot(citydf.year,citydf['income']/citydf['income'].values[0],label='income', alpha=.5)
         #ax.plot(citydf.year,citydf['final-demand']/citydf['final-demand'].values[0],label='final-demand', alpha=.5)
         #ax.plot(citydf.year,citydf['demand-pre-debt']/citydf['demand-pre-debt'].values[0],label='demand-pre-debt', alpha=.5)
         #ax.plot(citydf.year,citydf['debt-scaling-factor']/citydf['debt-scaling-factor'].values[0],label='debt-scaling-factor', alpha=.5)
-        ax.plot(citydf.year, citydf['debt-scaling-factor'].values/(ckz_sim_df.groupby(
+        ax.plot(citydf.year, citydf['debt-scaling-factor'].values/(ckz_muni_sim_df.groupby(
             'year').mean()['debt-scaling-factor']).values, label='debt-scaling-factor', alpha=.5)
         #ax.plot(citydf.year,citydf['adjustment-factor']/citydf['adjustment-factor'].values[0],label='adjustment-factor', alpha=.5)
     # ax.legend()
     fig.savefig('./simplots/random-cities-over-time.pdf')
     plt.close('all')
 else:
-    ckz_sim_df = ckz_sim_df[['prefecture', 'code', 'year', 'ckz', 'ckz-noFN']]
+    ckz_muni_sim_df = ckz_muni_sim_df[['prefecture', 'code', 'year', 'ckz', 'ckz-noFN']]
     ckz_pref_sim_df = ckz_pref_sim_df[[
-        'prefecture', 'year', 'ckz', 'ckz-noFN']]
+        'prefecture', 'code_fdf', 'year', 'ckz', 'ckz-noFN']].rename({'code_fdf':'code'},axis=1)
+    ckz_sim_df = pd.concat([ckz_muni_sim_df,ckz_pref_sim_df])

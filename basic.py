@@ -8,7 +8,7 @@ import samplot.colors as samcolors
 import shutil
 from matplotlib.ticker import FuncFormatter
 
-from data import furusato_df, furusato_rough_df, local_df, pref_df, annual_df, rough_annual_df
+from data import furusato_df, furusato_rough_df, annual_df, rough_annual_df, local_df
 
 from config import productionPlotFolder
 
@@ -24,7 +24,7 @@ for filetype in output_filetypes:
 
 oku = 10**8
 
-cb = CircusBoy(baseFont='Helvetica', cjkFont   ='Hiragino Maru Gothic Pro',titleFont='Helvetica',textFont='Helvetica', fontsize=12,figsize=(6,4))
+cb = CircusBoy(baseFont='Helvetica',cjkFont='Hiragino Maru Gothic Pro',titleFont='Helvetica',textFont='Helvetica',fontsize=12,figsize=(6,4))
 
 ####################################
 ## Total Donations Chart ###########
@@ -49,7 +49,7 @@ for lang in langs:
         cb.set_yLabel(ax, yLabel=r'bn', currency=r'\textyen')
     if lang =='jp':
         cb.set_yLabel(ax, yLabel=r'億円', currency=r'')   
-    cb.set_yTickLabels(ax)
+    
     cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
     cb.set_byline(ax, "Sam Passaglia")
     ax.set_xlim(min(annual_df.year)-.5,max(annual_df.year)+.5)
@@ -88,7 +88,7 @@ langs = ['en','jp']
 for lang in langs: 
     fig, ax = cb.handlers()
     cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
-    cb.set_yTickLabels(ax)
+    
     # cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
     # cb.set_byline(ax, "Sam Passaglia")
 
@@ -220,7 +220,7 @@ subtitles = {'en':r"Proportion of donations going to \textbf{top " + str(int(top
 for lang in langs:
     fig, ax = cb.handlers()
     cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
-    cb.set_yTickLabels(ax)
+    
     # cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
     # cb.set_byline(ax, "Sam Passaglia")
     ax.set_ylim(0,51)
@@ -246,20 +246,25 @@ for lang in langs:
 ############
 ############
 
-from japandata.readings.data import names_df
-
 topN = 10
 titles = {'en':r"\textbf{Municipalities which receive the most donations}",'jp':r"\textbf{ふるさと納税受入額の多い10自治体}"}
 
 langs = ['en','jp']
 for lang in langs:
+    if lang == 'en':
+        colname = 'city-reading'
+    elif lang =='jp':
+        colname = 'city'
+
     cbtable = CircusBoy(baseFont='Helvetica', cjkFont='Hiragino Maru Gothic Pro',titleFont='Helvetica',textFont='Helvetica', fontsize=12,figsize=(6.75,4))
     fig, ax = cbtable.handlers()
     fig.suptitle(titles[lang], y=.92, fontsize=cbtable.titlesize)
     code_list = []
+    names_list = [] 
     for i, year in enumerate(annual_df.year):
         inds = np.argsort(furusato_df.loc[furusato_df['year']==year]['donations'].values)[::-1]
         code_list.append(furusato_df.loc[furusato_df['year']==year]['code'].iloc[inds][0:topN].values)
+        names_list.append([s.title().replace('ou', r'\={o}') for s in furusato_df.loc[furusato_df['year']==year][colname].iloc[inds][0:topN].values])
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
     plt.box(on=None)
@@ -276,16 +281,13 @@ for lang in langs:
             j+=1
 
     code_list = np.array(code_list).T
+    names_list = np.array(names_list).T
     cellColours = np.ones_like(code_list)
     for i in range(len(code_list)):
         for j in range(len(code_list[i])):
             cellColours[i,j] = colors[code_list[i,j]]
         
-    if lang == 'en':
-        colname = 'city-reading'
-    elif lang =='jp':
-        colname = 'city'
-    table = ax.table(cellText=[[names_df.loc[names_df['code']==code_list[i][j], colname].values[0].title().replace('ou', r'\={o}') for j in range(len(code_list[j]))] for i in range(len(code_list))],
+    table = ax.table(cellText=names_list,
             cellColours=cellColours.tolist(),
             colLabels=annual_df.year,
             rowLabels=[str(i+1) + r'.' for i in range(topN)],
@@ -315,51 +317,72 @@ for lang in langs:
 
     shutil.copy(PLOT_FOLDER+'pdf/topN_table_'+lang+'.pdf',productionPlotFolder)
 
+###########
 
-############
-############
-
-fig, ax = cb.handlers()
-plt.rcParams['text.usetex'] = 'False'
-plt.rcParams['font.family'] = 'Hiragino Maru Gothic Pro'
 topN = 10
-title_string = r"Net Gain Ranking"
-fig.suptitle(title_string, y=.92, fontsize=14)
-city_list = []
-for i, year in enumerate(annual_df.year):
-    inds = np.argsort(np.nan_to_num(furusato_df.loc[furusato_df['year']==year]['netgainminusdeductions'].values))[::-1]
-    city_list.append(furusato_df.loc[furusato_df['year']==year]['city'].iloc[inds][0:topN].values)
-ax.get_xaxis().set_visible(False)
-ax.get_yaxis().set_visible(False)
-plt.box(on=None)
-uniques,counts=np.unique(city_list,return_counts=True)
-colors = dict()
-totalcolorsneeded = len(np.where(counts>1)[0])
-j=0
-cmap=matplotlib.cm.get_cmap('tab20c')
-for i, unique in enumerate(uniques):
-    if counts[i] == 1:
-        colors[unique] = "w"
-    else:
-        colors[unique] = cmap(j/(totalcolorsneeded)*16/20)
-        j+=1
+titles = {'en':r"\textbf{Municipalities which profit the most}",'jp':r"\textbf{ }"}
+col = 'profit-per-person-incl-pref-share-incl-ckz'
 
-city_list = np.array(city_list).T
-cellColours = np.ones_like(city_list)
-for i in range(len(city_list)):
-    for j in range(len(city_list[i])):
-        cellColours[i,j] = colors[city_list[i,j]]
-table = ax.table(cellText=city_list,
-        cellColours=cellColours.tolist(),
-        colLabels=annual_df.year,
-        rowLabels=[str(i+1) + '.' for i in range(topN)],
-        cellLoc='center',
-        loc='center')
-table.auto_set_font_size(False)            
-table.set_fontsize(12)
-table.scale(1.5, 2)
-ax.axis('tight')
-ax.axis('off')
-for suffix in output_filetypes:
-    fig.savefig(PLOT_FOLDER+'/'+suffix+'/'+'topN_net_table.'+suffix, transparent=True)
-plt.close('all')
+langs = ['en','jp']
+for lang in langs:
+    if lang == 'en':
+        colname = 'city-reading'
+    elif lang =='jp':
+        colname = 'city'
+
+    cbtable = CircusBoy(baseFont='Helvetica', cjkFont='Hiragino Maru Gothic Pro',titleFont='Helvetica',textFont='Helvetica', fontsize=12,figsize=(6.75,4))
+    fig, ax = cbtable.handlers()
+    fig.suptitle(titles[lang], y=.92, fontsize=cbtable.titlesize)
+    code_list = []
+    names_list = [] 
+    for i, year in enumerate(annual_df.year):
+        inds = np.argsort(local_df.loc[local_df['year']==year][col].values)[::-1]
+        code_list.append(local_df.loc[local_df['year']==year]['code'].iloc[inds][0:topN].values)
+        names_list.append([s.title().replace('ou', r'\={o}') for s in local_df.loc[local_df['year']==year][colname].iloc[inds][0:topN].values])
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+    plt.box(on=None)
+    uniques,counts=np.unique(code_list,return_counts=True)
+    colors = dict()
+    totalcolorsneeded = len(np.where(counts>1)[0])
+    j=0
+    cmap=matplotlib.cm.get_cmap('tab20c')
+    for i, unique in enumerate(uniques):
+        if counts[i] == 1:
+            colors[unique] = "w"
+        else:
+            colors[unique] = cmap(j/(totalcolorsneeded)*16/20)
+            j+=1
+
+    code_list = np.array(code_list).T
+    names_list = np.array(names_list).T
+    cellColours = np.ones_like(code_list)
+    for i in range(len(code_list)):
+        for j in range(len(code_list[i])):
+            cellColours[i,j] = colors[code_list[i,j]]
+        
+    table = ax.table(cellText=names_list,
+            cellColours=cellColours.tolist(),
+            colLabels=annual_df.year,
+            rowLabels=[str(i+1) + r'.' for i in range(topN)],
+            cellLoc='center',
+            loc='center',
+            fontsize=10.5)
+    table.auto_set_font_size(False)
+    table.set_fontsize(10.5)
+    table.scale(1.1, 2)
+
+    import six
+    for k, cell in six.iteritems(table._cells):
+        cell.set_edgecolor('white')
+        if k[1] == -1:
+            cell.set_text_props(ha='center')
+
+    ax.axis('tight')
+    ax.axis('off')
+    for suffix in output_filetypes:
+        fig.savefig(PLOT_FOLDER+'/'+suffix+'/'+'topN_profit_table_'+lang+'.'+suffix, transparent=True,bbox_inches='tight')
+    plt.close('all')
+
+    shutil.copy(PLOT_FOLDER+'pdf/topN_profit_per_person_table_'+lang+'.pdf',productionPlotFolder)
+
