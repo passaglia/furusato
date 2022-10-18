@@ -13,42 +13,73 @@ from matplotlib.ticker import FuncFormatter
 
 from config import productionPlotFolder
 
-from data import local_df, pref_df, annual_df, rough_df, rough_annual_df, local_df_no23, rough_df_no23
+from data import (
+    furusato_df,
+    furusato_rough_df,
+    local_df,
+    pref_df,
+    annual_df,
+    local_df_no23,
+    local_rough_df_no23,
+)
 
-PLOT_FOLDER = os.path.join(os.getcwd(),'advanced/')
+PLOT_FOLDER = os.path.join(os.getcwd(), "advanced/")
 
-output_filetypes = ['pdf']
+output_filetypes = ["pdf"]
 
 os.makedirs(PLOT_FOLDER, exist_ok=True)
 
 oku = 10**8
 hyakuman = 10**6
 
-cb = CircusBoy(baseFont='Helvetica', cjkFont='Hiragino Maru Gothic Pro',titleFont='Helvetica',textFont='Helvetica', fontsize=12,figsize=(6,4))
+cb = CircusBoy(
+    baseFont="Helvetica",
+    cjkFont="Hiragino Maru Gothic Pro",
+    titleFont="Helvetica",
+    textFont="Helvetica",
+    fontsize=12,
+    figsize=(6, 4),
+)
 
 ##############################
 #### Output prefecture table  ###########
 ##############################
 
 year = 2021
-pref_df.loc[(pref_df['year'] == year),['prefecture', 'netgainminusdeductions']].sort_values(['netgainminusdeductions'])
-pref_df.loc[(pref_df['year'] == year),['prefecture', 'profit-per-person']].sort_values(['profit-per-person'])
-pref_df.loc[(pref_df['year'] == year),['prefecture', 'donations']].sort_values(['donations'])
-pref_df.loc[(pref_df['year'] == year),['prefecture', 'total-pop']].sort_values(['total-pop'])
+pref_df.loc[
+    (pref_df["year"] == year), ["prefecture", "netgainminusdeductions"]
+].sort_values(["netgainminusdeductions"])
+pref_df.loc[(pref_df["year"] == year), ["prefecture", "profit-per-person"]].sort_values(
+    ["profit-per-person"]
+)
+pref_df.loc[(pref_df["year"] == year), ["prefecture", "donations"]].sort_values(
+    ["donations"]
+)
+pref_df.loc[(pref_df["year"] == year), ["prefecture", "total-pop"]].sort_values(
+    ["total-pop"]
+)
 
 ##############################
 #### Output municipal table  #
 ##############################
 
 year = 2021
-local_df.loc[(local_df['year'] == year),['city', 'netgainminusdeductions']].sort_values(['netgainminusdeductions'])
-local_df.loc[(local_df['year'] == year),['prefecture','city', 'profit-per-person', 'total-pop']].sort_values(['profit-per-person'])
-local_df.loc[(local_df['year'] == year),['city', 'donations']].sort_values(['donations'])
-local_df.loc[(local_df['year'] == year),['city', 'total-pop']].sort_values(['total-pop'])
+local_df.loc[
+    (local_df["year"] == year), ["city", "netgainminusdeductions"]
+].sort_values(["netgainminusdeductions"])
+local_df.loc[
+    (local_df["year"] == year), ["prefecture", "city", "profit-per-person", "total-pop"]
+].sort_values(["profit-per-person"])
+local_df.loc[(local_df["year"] == year), ["city", "donations"]].sort_values(
+    ["donations"]
+)
+local_df.loc[(local_df["year"] == year), ["city", "total-pop"]].sort_values(
+    ["total-pop"]
+)
 
-test_df = local_df.loc[(local_df['year'] == year),['city', 'netgainminusdeductions']]
-test_df['rank'] = test_df['netgainminusdeductions'].rank(ascending=False)
-test_df.loc[test_df['city']=='厚岸町']
+test_df = local_df.loc[(local_df["year"] == year), ["city", "netgainminusdeductions"]]
+test_df["rank"] = test_df["netgainminusdeductions"].rank(ascending=False)
+test_df.loc[test_df["city"] == "厚岸町"]
 
 ##############################
 #### PROFIT AND POPULATION  ##
@@ -56,18 +87,27 @@ test_df.loc[test_df['city']=='厚岸町']
 
 fig, ax = cb.handlers()
 title = r"Population vs Profit"
-#subtitle = r"(1m people)"
-#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-cb.set_titleSubtitle(ax, title)
+# subtitle = r"(1m people)"
+# ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+cb.set_title(ax, title)
 year = [2020]
-ax.scatter(local_df.loc[local_df['year'].isin(year)]['total-pop'],local_df.loc[local_df['year'].isin(year)]['netgainminusdeductions'])
+ax.scatter(
+    local_df.loc[local_df["year"].isin(year)]["total-pop"],
+    local_df.loc[local_df["year"].isin(year)]["netgainminusdeductions"],
+)
 for suffix in output_filetypes:
-    fig.savefig(PLOT_FOLDER+'profit_vs_pop.'+suffix, transparent=True)
-plt.close('all')
+    fig.savefig(PLOT_FOLDER + "profit_vs_pop." + suffix, transparent=True)
+plt.close("all")
 
-fig = px.scatter(local_df.loc[local_df['year'].isin(year)], x='total-pop',y='netgainminusdeductions', color='prefecture', hover_data=['code','prefecture', 'city'])
-fig.write_html(PLOT_FOLDER+'/profit_vs_pop.html')
-plt.close('all')
+fig = px.scatter(
+    local_df.loc[local_df["year"].isin(year)],
+    x="total-pop",
+    y="netgainminusdeductions",
+    color="prefecture",
+    hover_data=["code", "prefecture", "city"],
+)
+fig.write_html(PLOT_FOLDER + "/profit_vs_pop.html")
+plt.close("all")
 
 ##############################
 #### PROFIT AND POP CHANGE  ##
@@ -75,18 +115,29 @@ plt.close('all')
 
 fig, ax = cb.handlers()
 title = r"Population Change vs Profit"
-#subtitle = r"(1m people)"
-#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+# subtitle = r"(1m people)"
+# ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(
+    title, x=0, y=1.15, fontsize=18, ha="left", va="bottom", transform=ax.transAxes
+)
 year = [2020]
-ax.scatter(local_df.loc[local_df['year'].isin(year)]['in-minus-out-rate'],local_df.loc[local_df['year'].isin(year)]['netgainminusdeductions'])
+ax.scatter(
+    local_df.loc[local_df["year"].isin(year)]["in-minus-out-rate"],
+    local_df.loc[local_df["year"].isin(year)]["netgainminusdeductions"],
+)
 for suffix in output_filetypes:
-    fig.savefig(PLOT_FOLDER+'profit_vs_popchange.'+suffix, transparent=True)
-plt.close('all')
+    fig.savefig(PLOT_FOLDER + "profit_vs_popchange." + suffix, transparent=True)
+plt.close("all")
 
-fig = px.scatter(local_df.loc[local_df['year'].isin(year)], x='in-minus-out-rate',y='netgainminusdeductions', color='prefecture', hover_data=['code','prefecture', 'city'])
-fig.write_html(PLOT_FOLDER+'/profit_vs_popchange.html')
-plt.close('all')
+fig = px.scatter(
+    local_df.loc[local_df["year"].isin(year)],
+    x="in-minus-out-rate",
+    y="netgainminusdeductions",
+    color="prefecture",
+    hover_data=["code", "prefecture", "city"],
+)
+fig.write_html(PLOT_FOLDER + "/profit_vs_popchange.html")
+plt.close("all")
 
 ##############################
 #### DONATIONS AND POP CHANGE  ##
@@ -94,18 +145,29 @@ plt.close('all')
 
 fig, ax = cb.handlers()
 title = r"Population Change vs Donations"
-#subtitle = r"(1m people)"
-#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+# subtitle = r"(1m people)"
+# ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(
+    title, x=0, y=1.15, fontsize=18, ha="left", va="bottom", transform=ax.transAxes
+)
 year = [2020]
-ax.scatter(local_df.loc[local_df['year'].isin(year)]['in-minus-out-rate'],local_df.loc[local_df['year'].isin(year)]['donations'])
+ax.scatter(
+    local_df.loc[local_df["year"].isin(year)]["in-minus-out-rate"],
+    local_df.loc[local_df["year"].isin(year)]["donations"],
+)
 for suffix in output_filetypes:
-    fig.savefig(PLOT_FOLDER+'profit_vs_popchange.'+suffix, transparent=True)
-plt.close('all')
+    fig.savefig(PLOT_FOLDER + "profit_vs_popchange." + suffix, transparent=True)
+plt.close("all")
 
-fig = px.scatter(local_df.loc[local_df['year'].isin(year)], x='in-minus-out-rate',y='donations', color='prefecture', hover_data=['code','prefecture', 'city'])
-fig.write_html(PLOT_FOLDER+'/profit_vs_popchange.html')
-plt.close('all')
+fig = px.scatter(
+    local_df.loc[local_df["year"].isin(year)],
+    x="in-minus-out-rate",
+    y="donations",
+    color="prefecture",
+    hover_data=["code", "prefecture", "city"],
+)
+fig.write_html(PLOT_FOLDER + "/profit_vs_popchange.html")
+plt.close("all")
 
 ##############################
 #### DONATIONS AND STRENGTH ##
@@ -113,18 +175,29 @@ plt.close('all')
 
 fig, ax = cb.handlers()
 title = r"Donations vs Strength"
-#subtitle = r"(1m people)"
-#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+# subtitle = r"(1m people)"
+# ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(
+    title, x=0, y=1.15, fontsize=18, ha="left", va="bottom", transform=ax.transAxes
+)
 year = [2020]
-ax.scatter(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'],local_df_no23.loc[local_df_no23['year'].isin(year)]['donations'])
+ax.scatter(
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["economic-strength-index"],
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["donations"],
+)
 for suffix in output_filetypes:
-    fig.savefig(PLOT_FOLDER+'donations_vs_strength.'+suffix, transparent=True)
-plt.close('all')
+    fig.savefig(PLOT_FOLDER + "donations_vs_strength." + suffix, transparent=True)
+plt.close("all")
 
-fig = px.scatter(local_df_no23.loc[local_df_no23['year'].isin(year)], x='economic-strength-index',y='donations', color='prefecture', hover_data=['code','prefecture', 'city'])
-fig.write_html(PLOT_FOLDER+'/donations_vs_strength.html')
-plt.close('all')
+fig = px.scatter(
+    local_df_no23.loc[local_df_no23["year"].isin(year)],
+    x="economic-strength-index",
+    y="donations",
+    color="prefecture",
+    hover_data=["code", "prefecture", "city"],
+)
+fig.write_html(PLOT_FOLDER + "/donations_vs_strength.html")
+plt.close("all")
 
 
 ##############################
@@ -133,18 +206,29 @@ plt.close('all')
 
 fig, ax = cb.handlers()
 title = r"Donations vs Strength"
-#subtitle = r"(1m people)"
-#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+# subtitle = r"(1m people)"
+# ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(
+    title, x=0, y=1.15, fontsize=18, ha="left", va="bottom", transform=ax.transAxes
+)
 year = [2017]
-ax.scatter(pref_df.loc[pref_df['year'].isin(year)]['economic-strength-index'],pref_df.loc[pref_df['year'].isin(year)]['donations'])
+ax.scatter(
+    pref_df.loc[pref_df["year"].isin(year)]["economic-strength-index"],
+    pref_df.loc[pref_df["year"].isin(year)]["donations"],
+)
 for suffix in output_filetypes:
-    fig.savefig(PLOT_FOLDER+'donations_vs_strength_pref.'+suffix, transparent=True)
-plt.close('all')
+    fig.savefig(PLOT_FOLDER + "donations_vs_strength_pref." + suffix, transparent=True)
+plt.close("all")
 
-fig = px.scatter(pref_df.loc[pref_df['year'].isin(year)], x='economic-strength-index',y='donations', color='prefecture', hover_data=['prefecture'])
-fig.write_html(PLOT_FOLDER+'/donations_vs_strength_pref.html')
-plt.close('all')
+fig = px.scatter(
+    pref_df.loc[pref_df["year"].isin(year)],
+    x="economic-strength-index",
+    y="donations",
+    color="prefecture",
+    hover_data=["prefecture"],
+)
+fig.write_html(PLOT_FOLDER + "/donations_vs_strength_pref.html")
+plt.close("all")
 
 
 ##############################
@@ -153,15 +237,31 @@ plt.close('all')
 
 fig, ax = cb.handlers()
 title = r"Donations vs Strength"
-#subtitle = r"(1m people)"
-#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+# subtitle = r"(1m people)"
+# ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(
+    title, x=0, y=1.15, fontsize=18, ha="left", va="bottom", transform=ax.transAxes
+)
 year = [2018]
-ax.hist(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], bins=20, density=True, color=samcolors.nice_colors(3))
-ax.hist(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], bins=20, weights = local_df_no23.loc[local_df_no23['year'].isin(year)]['donations'], density=True, color=samcolors.nice_colors(0),alpha=.5)
+ax.hist(
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["economic-strength-index"],
+    bins=20,
+    density=True,
+    color=samcolors.nice_colors(3),
+)
+ax.hist(
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["economic-strength-index"],
+    bins=20,
+    weights=local_df_no23.loc[local_df_no23["year"].isin(year)]["donations"],
+    density=True,
+    color=samcolors.nice_colors(0),
+    alpha=0.5,
+)
 for suffix in output_filetypes:
-    fig.savefig(PLOT_FOLDER+'donations_vs_strength_histogram.'+suffix, transparent=True)
-plt.close('all')
+    fig.savefig(
+        PLOT_FOLDER + "donations_vs_strength_histogram." + suffix, transparent=True
+    )
+plt.close("all")
 
 ##############################
 #### DONATIONS AND STRENGTH PLOT ##
@@ -169,21 +269,37 @@ plt.close('all')
 
 fig, ax = cb.handlers()
 title = r"Donations vs Strength"
-#subtitle = r"(1m people)"
-#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
-year = [2020]#2016,2017,2018,2019,
+# subtitle = r"(1m people)"
+# ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(
+    title, x=0, y=1.15, fontsize=18, ha="left", va="bottom", transform=ax.transAxes
+)
+year = [2020]  # 2016,2017,2018,2019,
 from scipy.stats import binned_statistic
-mean, _, _ = binned_statistic(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], local_df_no23.loc
-[local_df_no23['year'].isin(year)]['donations'], statistic='mean', bins=20)
-median, _, _ = binned_statistic(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], local_df_no23.loc
-[local_df_no23['year'].isin(year)]['donations'], statistic='median', bins=20)
-binmean, _, _ = binned_statistic(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'],local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], statistic='median', bins=20)
-ax.scatter(binmean,mean, color='red')
-ax.plot(binmean,median, color='blue')
+
+mean, _, _ = binned_statistic(
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["economic-strength-index"],
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["donations"],
+    statistic="mean",
+    bins=20,
+)
+median, _, _ = binned_statistic(
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["economic-strength-index"],
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["donations"],
+    statistic="median",
+    bins=20,
+)
+binmean, _, _ = binned_statistic(
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["economic-strength-index"],
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["economic-strength-index"],
+    statistic="median",
+    bins=20,
+)
+ax.scatter(binmean, mean, color="red")
+ax.plot(binmean, median, color="blue")
 for suffix in output_filetypes:
-    fig.savefig(PLOT_FOLDER+'donations_vs_strength_plot.'+suffix, transparent=True)
-plt.close('all')
+    fig.savefig(PLOT_FOLDER + "donations_vs_strength_plot." + suffix, transparent=True)
+plt.close("all")
 
 
 ##############################
@@ -192,24 +308,46 @@ plt.close('all')
 
 fig, ax = cb.handlers()
 title = r"Profit Per Capita vs Strength"
-#subtitle = r"(1m people)"
-#ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(title, x=0,y=1.15, fontsize=18,ha='left',va='bottom', transform=ax.transAxes)
+# subtitle = r"(1m people)"
+# ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+fig.suptitle(
+    title, x=0, y=1.15, fontsize=18, ha="left", va="bottom", transform=ax.transAxes
+)
 year = [2020]
 from scipy.stats import binned_statistic
-mean, _, _ = binned_statistic(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], local_df_no23.loc
-[local_df_no23['year'].isin(year)]['profit-per-person'], statistic='mean', bins=20)
-median, _, _ = binned_statistic(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], local_df_no23.loc
-[local_df_no23['year'].isin(year)]['profit-per-person'], statistic='median', bins=20)
-std, _, _ = binned_statistic(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], local_df_no23.loc
-[local_df_no23['year'].isin(year)]['profit-per-person'], statistic='std', bins=20)
-binmean, _, _ = binned_statistic(local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'],local_df_no23.loc[local_df_no23['year'].isin(year)]['economic-strength-index'], statistic='mean', bins=20)
-ax.errorbar(binmean,mean, std,color='red')
-ax.errorbar(binmean,median, std, color='blue')
-ax.set_xlim([0.1,1.4])
+
+mean, _, _ = binned_statistic(
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["economic-strength-index"],
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["profit-per-person"],
+    statistic="mean",
+    bins=20,
+)
+median, _, _ = binned_statistic(
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["economic-strength-index"],
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["profit-per-person"],
+    statistic="median",
+    bins=20,
+)
+std, _, _ = binned_statistic(
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["economic-strength-index"],
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["profit-per-person"],
+    statistic="std",
+    bins=20,
+)
+binmean, _, _ = binned_statistic(
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["economic-strength-index"],
+    local_df_no23.loc[local_df_no23["year"].isin(year)]["economic-strength-index"],
+    statistic="mean",
+    bins=20,
+)
+ax.errorbar(binmean, mean, std, color="red")
+ax.errorbar(binmean, median, std, color="blue")
+ax.set_xlim([0.1, 1.4])
 for suffix in output_filetypes:
-    fig.savefig(PLOT_FOLDER+'profit-per-person_vs_strength_plot.'+suffix, transparent=True)
-plt.close('all')
+    fig.savefig(
+        PLOT_FOLDER + "profit-per-person_vs_strength_plot." + suffix, transparent=True
+    )
+plt.close("all")
 
 ###################################
 #### STRENGTH OF TOP N DONATIONS ##
@@ -217,62 +355,165 @@ plt.close('all')
 
 topN = 20
 
-langs = ['en','jp']
+langs = ["en", "jp"]
 
-colorstring = (r"\definecolor{blue}{rgb}{"+str(samcolors.nice_colors(3))[1:-1]+"}"+
-r"\definecolor{yellow}{rgb}{"+str(samcolors.nice_colors(1))[1:-1]+"}" +
-r"\definecolor{orange}{rgb}{"+str(samcolors.nice_colors(0.5))[1:-1]+"}" +
-r"\definecolor{red}{rgb}{"+str(samcolors.nice_colors(0))[1:-1]+"}" 
+colorstring = (
+    r"\definecolor{blue}{rgb}{"
+    + str(samcolors.nice_colors(3))[1:-1]
+    + "}"
+    + r"\definecolor{yellow}{rgb}{"
+    + str(samcolors.nice_colors(1))[1:-1]
+    + "}"
+    + r"\definecolor{orange}{rgb}{"
+    + str(samcolors.nice_colors(0.5))[1:-1]
+    + "}"
+    + r"\definecolor{red}{rgb}{"
+    + str(samcolors.nice_colors(0))[1:-1]
+    + "}"
 )
 
-titles = {'en':r"\textbf{The top winners are already relatively rich}", 'jp':r"\textbf{儲かっている自治体は比較的にもう裕福}"}
-subtitles = {'en':colorstring+r"Economic strength index of \textbf{\textcolor{blue}{top " + str(topN) + " municipalities}}", 'jp':
-colorstring+r"寄附金額が多い\textbf{\textcolor{blue}{２０自治体}}の財政力指標"}
+titles = {
+    "en": r"\textbf{The top winners are already relatively rich}",
+    "jp": r"\textbf{儲かっている自治体は比較的にもう裕福}",
+}
+subtitles = {
+    "en": colorstring
+    + r"Economic strength index of \textbf{\textcolor{blue}{top "
+    + str(topN)
+    + " municipalities}}",
+    "jp": colorstring + r"寄附金額が多い\textbf{\textcolor{blue}{２０自治体}}の財政力指標",
+}
 
 for lang in langs:
     fig, ax = cb.handlers()
-    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
-    cb.set_yTickLabels(ax)
+    cb.set_title(ax, titles[lang], subtitles[lang])
+
     # cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
     # cb.set_byline(ax, "by Sam Passaglia")
 
     names_list = []
-    topN_economic_list=[]
+    topN_economic_list = []
     all_economic_list = []
-    for i, year in enumerate(rough_df.year.unique()):
+    for i, year in enumerate(furusato_rough_df.year.unique()):
         print(year)
-        inds = np.argsort(rough_df.loc[rough_df['year']==year,'donations'].values)[::-1]
-        names_list.append(rough_df.loc[rough_df['year']==year,'city'].iloc[inds[0:topN]].values)
-        topN_economic_list.append(rough_df.loc[rough_df['year']==year,'economic-strength-index'].iloc[inds[0:topN]].values)
-        all_economic_list.append(rough_df_no23.loc[rough_df_no23['year']==year,'economic-strength-index'])
-        
-    ax.plot(rough_df.year.unique(), [np.mean(topN_economic_list[i]) for i in range(len(topN_economic_list))], color=samcolors.nice_colors(3))
-    ax.plot(rough_df.year.unique(),  [np.quantile(all_economic_list[i],.5) for i in range(len(all_economic_list))], color=samcolors.nice_colors(1))
-    ax.plot(rough_df.year.unique(),  [np.quantile(all_economic_list[i],.25) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0.5))
-    #ax.plot(rough_df.year.unique(),  [np.quantile(all_economic_list[i],.01) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0))
-    ax.plot(rough_df.year.unique(),  [np.mean(np.sort(all_economic_list[i])[0:20]) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0))
+        inds = np.argsort(
+            furusato_rough_df.loc[furusato_rough_df["year"] == year, "donations"].values
+        )[::-1]
+        names_list.append(
+            furusato_rough_df.loc[furusato_rough_df["year"] == year, "city"]
+            .iloc[inds[0:topN]]
+            .values
+        )
+        topN_economic_list.append(
+            furusato_rough_df.loc[
+                furusato_rough_df["year"] == year, "economic-strength-index"
+            ]
+            .iloc[inds[0:topN]]
+            .values
+        )
+        all_economic_list.append(
+            local_rough_df_no23.loc[
+                local_rough_df_no23["year"] == year, "economic-strength-index"
+            ]
+        )
 
-    ax.set_xlim(min(rough_df.year)-.8,max(rough_df.year)+.2)
-    ax.set_xticks([2009,2011,2013,2015,2017,2019,2021])
+    ax.plot(
+        furusato_rough_df.year.unique(),
+        [np.mean(topN_economic_list[i]) for i in range(len(topN_economic_list))],
+        color=samcolors.nice_colors(3),
+    )
+    ax.plot(
+        furusato_rough_df.year.unique(),
+        [np.quantile(all_economic_list[i], 0.5) for i in range(len(all_economic_list))],
+        color=samcolors.nice_colors(1),
+    )
+    ax.plot(
+        furusato_rough_df.year.unique(),
+        [
+            np.quantile(all_economic_list[i], 0.25)
+            for i in range(len(all_economic_list))
+        ],
+        color=samcolors.nice_colors(0.5),
+    )
+    # ax.plot(furusato_rough_df.year.unique(),  [np.quantile(all_economic_list[i],.01) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0))
+    ax.plot(
+        furusato_rough_df.year.unique(),
+        [
+            np.mean(np.sort(all_economic_list[i])[0:20])
+            for i in range(len(all_economic_list))
+        ],
+        color=samcolors.nice_colors(0),
+    )
+
+    ax.set_xlim(min(furusato_rough_df.year) - 0.8, max(furusato_rough_df.year) + 0.2)
+    ax.set_xticks([2009, 2011, 2013, 2015, 2017, 2019, 2021])
 
     ## TODO THE MEDIANS AND PERCENTILES ARE ALL TOKYO-FREE
-    if lang == 'en':
-        ax.text(2008, .5, colorstring+r'\textbf{\textcolor{yellow}{All-Japan median}}', va='bottom', ha='left', fontsize=14)
-        ax.text(2008, .29, colorstring+r'\textbf{\textcolor{orange}{25th percentile: One quarter lie below this line}}', va='bottom', ha='left', fontsize=14)
-        ax.text(2008, .1, colorstring+r'\textbf{\textcolor{red}{Economically weakest 20 municipalities}}', va='bottom', ha='left', fontsize=14)
-    elif lang == 'jp':
-        ax.text(2008, .52, colorstring+r'\textbf{\textcolor{yellow}{全国中央値}}', va='bottom', ha='left', fontsize=14)
-        ax.text(2008, .31, colorstring+r'\textbf{\textcolor{orange}{２５パーセンタイル：この線の下には自治体の４分の１}}', va='bottom', ha='left', fontsize=14)
-        ax.text(2008, .12, colorstring+r'\textbf{\textcolor{red}{財政力最弱２０自治体}}', va='bottom', ha='left', fontsize=14)
+    if lang == "en":
+        ax.text(
+            2008,
+            0.5,
+            colorstring + r"\textbf{\textcolor{yellow}{All-Japan median}}",
+            va="bottom",
+            ha="left",
+            fontsize=14,
+        )
+        ax.text(
+            2008,
+            0.29,
+            colorstring
+            + r"\textbf{\textcolor{orange}{25th percentile: One quarter lie below this line}}",
+            va="bottom",
+            ha="left",
+            fontsize=14,
+        )
+        ax.text(
+            2008,
+            0.1,
+            colorstring
+            + r"\textbf{\textcolor{red}{Economically weakest 20 municipalities}}",
+            va="bottom",
+            ha="left",
+            fontsize=14,
+        )
+    elif lang == "jp":
+        ax.text(
+            2008,
+            0.52,
+            colorstring + r"\textbf{\textcolor{yellow}{全国中央値}}",
+            va="bottom",
+            ha="left",
+            fontsize=14,
+        )
+        ax.text(
+            2008,
+            0.31,
+            colorstring + r"\textbf{\textcolor{orange}{２５パーセンタイル：この線の下には自治体の４分の１}}",
+            va="bottom",
+            ha="left",
+            fontsize=14,
+        )
+        ax.text(
+            2008,
+            0.12,
+            colorstring + r"\textbf{\textcolor{red}{財政力最弱２０自治体}}",
+            va="bottom",
+            ha="left",
+            fontsize=14,
+        )
 
-    ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
-    ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.1f}'.format))
+    ax.xaxis.set_major_formatter(FuncFormatter(r"{0:.0f}".format))
+    ax.yaxis.set_major_formatter(FuncFormatter(r"{0:.1f}".format))
 
     for suffix in output_filetypes:
-        fig.savefig(PLOT_FOLDER+'topN-strength_'+lang+'.'+suffix, transparent=True, bbox_inches='tight')
-    shutil.copy(PLOT_FOLDER+'topN-strength_'+lang+'.pdf',productionPlotFolder)
+        fig.savefig(
+            PLOT_FOLDER + "topN-strength_" + lang + "." + suffix,
+            transparent=True,
+            bbox_inches="tight",
+        )
+    shutil.copy(PLOT_FOLDER + "topN-strength_" + lang + ".pdf", productionPlotFolder)
 
-    plt.close('all')
+    plt.close("all")
 
 
 ###################################
@@ -281,247 +522,522 @@ for lang in langs:
 
 topN = 20
 
-langs = ['en','jp']
+langs = ["en", "jp"]
 
-colorstring = (r"\definecolor{blue}{rgb}{"+str(samcolors.nice_colors(3))[1:-1]+"}"+
-r"\definecolor{yellow}{rgb}{"+str(samcolors.nice_colors(1))[1:-1]+"}" +
-r"\definecolor{orange}{rgb}{"+str(samcolors.nice_colors(0.5))[1:-1]+"}" +
-r"\definecolor{red}{rgb}{"+str(samcolors.nice_colors(0))[1:-1]+"}" 
+colorstring = (
+    r"\definecolor{blue}{rgb}{"
+    + str(samcolors.nice_colors(3))[1:-1]
+    + "}"
+    + r"\definecolor{yellow}{rgb}{"
+    + str(samcolors.nice_colors(1))[1:-1]
+    + "}"
+    + r"\definecolor{orange}{rgb}{"
+    + str(samcolors.nice_colors(0.5))[1:-1]
+    + "}"
+    + r"\definecolor{red}{rgb}{"
+    + str(samcolors.nice_colors(0))[1:-1]
+    + "}"
 )
 
-titles = {'en':r"\textbf{The top winners are already relatively rich}", 'jp':r"\textbf{儲かっている自治体は比較的にもう裕福}"}
-subtitles = {'en':colorstring+r"Economic strength of \textbf{\textcolor{blue}{top " + str(topN) + " most profiting municipalities}}", 'jp':
-colorstring+r"利益が高い\textbf{\textcolor{blue}{２０自治体}}の財政力指標"}
+titles = {
+    "en": r"\textbf{The top winners are already relatively rich}",
+    "jp": r"\textbf{儲かっている自治体は比較的にもう裕福}",
+}
+subtitles = {
+    "en": colorstring
+    + r"Economic strength of \textbf{\textcolor{blue}{top "
+    + str(topN)
+    + " most profiting municipalities}}",
+    "jp": colorstring + r"利益が高い\textbf{\textcolor{blue}{２０自治体}}の財政力指標",
+}
 
 for lang in langs:
     fig, ax = cb.handlers()
-    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
-    cb.set_yTickLabels(ax)
+    cb.set_title(ax, titles[lang], subtitles[lang])
+
     # cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
     # cb.set_byline(ax, "by Sam Passaglia")
 
     names_list = []
-    topN_economic_list=[]
+    topN_economic_list = []
     all_economic_list = []
     for i, year in enumerate(local_df.year.unique()):
         print(year)
-        inds = np.argsort(local_df.loc[local_df['year']==year,'profit-incl-ckz'].values)[::-1]
-        inds = np.argsort(local_df.loc[local_df['year']==year,'netgainminusdeductions'].values)[::-1]
-        names_list.append(local_df.loc[local_df['year']==year,'city'].iloc[inds[0:topN]].values)
-        topN_economic_list.append(local_df.loc[local_df['year']==year,'economic-strength-index'].iloc[inds[0:topN]].values)
-        all_economic_list.append(local_df_no23.loc[local_df_no23['year']==year,'economic-strength-index'])
-        
-    ax.plot(local_df.year.unique(), [np.mean(topN_economic_list[i]) for i in range(len(topN_economic_list))], color=samcolors.nice_colors(3))
-    ax.plot(local_df.year.unique(),  [np.quantile(all_economic_list[i],.5) for i in range(len(all_economic_list))], color=samcolors.nice_colors(1))
-    ax.plot(local_df.year.unique(),  [np.quantile(all_economic_list[i],.25) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0.5))
-    #ax.plot(rough_df.year.unique(),  [np.quantile(all_economic_list[i],.01) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0))
-    ax.plot(local_df.year.unique(),  [np.mean(np.sort(all_economic_list[i])[0:20]) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0))
+        inds = np.argsort(
+            local_df.loc[local_df["year"] == year, "profit-incl-ckz"].values
+        )[::-1]
+        inds = np.argsort(
+            local_df.loc[local_df["year"] == year, "netgainminusdeductions"].values
+        )[::-1]
+        names_list.append(
+            local_df.loc[local_df["year"] == year, "city"].iloc[inds[0:topN]].values
+        )
+        topN_economic_list.append(
+            local_df.loc[local_df["year"] == year, "economic-strength-index"]
+            .iloc[inds[0:topN]]
+            .values
+        )
+        all_economic_list.append(
+            local_df_no23.loc[local_df_no23["year"] == year, "economic-strength-index"]
+        )
 
-    ax.set_xlim(min(local_df.year)-.4,max(local_df.year)+.2)
-    ax.set_xticks([2016,2017,2018,2019,2020,2021])
+    ax.plot(
+        local_df.year.unique(),
+        [np.mean(topN_economic_list[i]) for i in range(len(topN_economic_list))],
+        color=samcolors.nice_colors(3),
+    )
+    ax.plot(
+        local_df.year.unique(),
+        [np.quantile(all_economic_list[i], 0.5) for i in range(len(all_economic_list))],
+        color=samcolors.nice_colors(1),
+    )
+    ax.plot(
+        local_df.year.unique(),
+        [
+            np.quantile(all_economic_list[i], 0.25)
+            for i in range(len(all_economic_list))
+        ],
+        color=samcolors.nice_colors(0.5),
+    )
+    # ax.plot(furusato_rough_df.year.unique(),  [np.quantile(all_economic_list[i],.01) for i in range(len(all_economic_list))], color=samcolors.nice_colors(0))
+    ax.plot(
+        local_df.year.unique(),
+        [
+            np.mean(np.sort(all_economic_list[i])[0:20])
+            for i in range(len(all_economic_list))
+        ],
+        color=samcolors.nice_colors(0),
+    )
+
+    ax.set_xlim(min(local_df.year) - 0.4, max(local_df.year) + 0.2)
+    ax.set_xticks([2016, 2017, 2018, 2019, 2020, 2021])
 
     ## TODO THE MEDIANS AND PERCENTILES ARE ALL TOKYO-FREE
-    if lang == 'en':
-        ax.text(2016, .46, colorstring+r'\textbf{\textcolor{yellow}{All-Japan median}}', va='bottom', ha='left', fontsize=14)
-        ax.text(2016, .29, colorstring+r'\textbf{\textcolor{orange}{25th percentile: One quarter lie below this line}}', va='bottom', ha='left', fontsize=14)
-        ax.text(2016, .1, colorstring+r'\textbf{\textcolor{red}{Economically weakest 20 municipalities}}', va='bottom', ha='left', fontsize=14)
-    elif lang == 'jp':
-        ax.text(2016, .47, colorstring+r'\textbf{\textcolor{yellow}{全国中央値}}', va='bottom', ha='left', fontsize=14)
-        ax.text(2016, .31, colorstring+r'\textbf{\textcolor{orange}{２５パーセンタイル：この線の下には自治体の４分の１}}', va='bottom', ha='left', fontsize=14)
-        ax.text(2016, .12, colorstring+r'\textbf{\textcolor{red}{財政力最弱２０自治体}}', va='bottom', ha='left', fontsize=14)
+    if lang == "en":
+        ax.text(
+            2016,
+            0.46,
+            colorstring + r"\textbf{\textcolor{yellow}{All-Japan median}}",
+            va="bottom",
+            ha="left",
+            fontsize=14,
+        )
+        ax.text(
+            2016,
+            0.29,
+            colorstring
+            + r"\textbf{\textcolor{orange}{25th percentile: One quarter lie below this line}}",
+            va="bottom",
+            ha="left",
+            fontsize=14,
+        )
+        ax.text(
+            2016,
+            0.1,
+            colorstring
+            + r"\textbf{\textcolor{red}{Economically weakest 20 municipalities}}",
+            va="bottom",
+            ha="left",
+            fontsize=14,
+        )
+    elif lang == "jp":
+        ax.text(
+            2016,
+            0.47,
+            colorstring + r"\textbf{\textcolor{yellow}{全国中央値}}",
+            va="bottom",
+            ha="left",
+            fontsize=14,
+        )
+        ax.text(
+            2016,
+            0.31,
+            colorstring + r"\textbf{\textcolor{orange}{２５パーセンタイル：この線の下には自治体の４分の１}}",
+            va="bottom",
+            ha="left",
+            fontsize=14,
+        )
+        ax.text(
+            2016,
+            0.12,
+            colorstring + r"\textbf{\textcolor{red}{財政力最弱２０自治体}}",
+            va="bottom",
+            ha="left",
+            fontsize=14,
+        )
 
-    ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
-    ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.1f}'.format))
+    ax.xaxis.set_major_formatter(FuncFormatter(r"{0:.0f}".format))
+    ax.yaxis.set_major_formatter(FuncFormatter(r"{0:.1f}".format))
 
     for suffix in output_filetypes:
-        fig.savefig(PLOT_FOLDER+'topN-profit-strength_'+lang+'.'+suffix, transparent=True, bbox_inches='tight')
-    shutil.copy(PLOT_FOLDER+'topN-profit-strength_'+lang+'.pdf',productionPlotFolder)
+        fig.savefig(
+            PLOT_FOLDER + "topN-profit-strength_" + lang + "." + suffix,
+            transparent=True,
+            bbox_inches="tight",
+        )
+    shutil.copy(
+        PLOT_FOLDER + "topN-profit-strength_" + lang + ".pdf", productionPlotFolder
+    )
 
-    plt.close('all')
+    plt.close("all")
 
 
 ##############################
 #### PER PERSON PROFIT-LOSS ##
 ##############################
 
-year = [2016,2021]
+year = [2016, 2021]
 
-titles = {'en':r"\textbf{Growing gap between winners and losers}", 
-'jp':r"\textbf{都道府県の間に、利益格差が広がっている}"}
-subtitles = {'en':r"Population and per-capita profit, " + str(year[0]) + r" to " + str(year[1]), 
-'jp':r"各県の人口と一人当たり純利益の進化、" + str(year[0]) + r"から" + str(year[1])}
-xlabels = {'en':r'Profit per capita  (\textyen/person)', 
-'jp':r'一人当たり純利益 (円／人）'} 
-#ylabels = {'en':'Population ', 
-#'jp':r'人口'} 
-langs = ['en','jp']
+titles = {
+    "en": r"\textbf{Growing gap between winners and losers}",
+    "jp": r"\textbf{都道府県の間に、利益格差が広がっている}",
+}
+subtitles = {
+    "en": r"Population and per-capita profit, " + str(year[0]) + r" to " + str(year[1]),
+    "jp": r"各県の人口と一人当たり純利益の進化、" + str(year[0]) + r"から" + str(year[1]),
+}
+xlabels = {"en": r"Profit per capita  (\textyen/person)", "jp": r"一人当たり純利益 (円／人）"}
+# ylabels = {'en':'Population ',
+#'jp':r'人口'}
+langs = ["en", "jp"]
 
-for lang in langs: 
+for lang in langs:
     fig, ax = cb.handlers()
-    if lang =='en':
-        cb.set_yLabel(ax, yLabel=r' million people', currency=r'')
-    if lang =='jp':
-        cb.set_yLabel(ax, yLabel=r'百万人', currency=r'')   
-    ax.set_yticks([0,5,10,15,20])
-    ax.set_ylim([0,1.55*10])
-    ax.set_xlim([-11000,21000])
-    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
-    cb.set_yTickLabels(ax)
+    if lang == "en":
+        cb.set_yunit(ax, yunit=r" million people", currency=r"")
+    if lang == "jp":
+        cb.set_yunit(ax, yunit=r"百万人", currency=r"")
+    ax.set_yticks([0, 5, 10, 15, 20])
+    ax.set_ylim([0, 1.55 * 10])
+    ax.set_xlim([-11000, 21000])
+    cb.set_title(ax, titles[lang], subtitles[lang])
 
-    ax.set_xlabel(xlabels[lang],color='black')
-    #ax.set_ylabel(ylabels[lang],color='black')
-    ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
-    #ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
+    ax.set_xlabel(xlabels[lang], color="black")
+    # ax.set_ylabel(ylabels[lang],color='black')
+    ax.xaxis.set_major_formatter(FuncFormatter(r"{0:.0f}".format))
+    # ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
 
-    deltas_jp = {"東京都":[0,-.5], "神奈川県":[200,.5], "大阪府":[0,-.5], "愛知県":[-2200,.2], "埼玉県":[200,-.4], "千葉県":[-2000,0], "兵庫県":[0,-.5], "福岡県":[-100,.5],"北海道":[0,-.5], "静岡県":[0,.5], "茨城県":[900,0], "京都府":[-1100,-.3], "広島県":[0,+.5], "奈良県":[-1700,0],"佐賀県":[5900,-.4],"鹿児島県":[4900,0],"宮崎県":[5900,.5], "山形県":[4000,.5],"熊本県":[1500,.5],"新潟県":[1200,.55], "徳島県":[0,-.5], "高知県":[2000,-.5], "山梨県":[7000,-.5]}
-    deltas_en = {"東京都":[0,-.5], "神奈川県":[200,.5], "大阪府":[0,-.5], "愛知県":[-2200,.1], "埼玉県":[200,-.4], "千葉県":[-2300,0], "兵庫県":[0,-.5], "福岡県":[-100,.5],"北海道":[0,.5], "静岡県":[0,.5], "茨城県":[1200,0], "京都府":[-200,-.4], "広島県":[0,+.5], "奈良県":[0,-.5],"佐賀県":[5900,-.4],"鹿児島県":[4900,.3],"宮崎県":[6400,.5], "山形県":[4000,.5],"熊本県":[2500,.4],"新潟県":[1800,.4], "徳島県":[0,-.5],  "高知県":[2000,-.4], "山梨県":[7000,-.5]}
-    for prefecture in pref_df['prefecture'].unique(): 
-        xs = pref_df.loc[(pref_df['prefecture']==prefecture) &(pref_df['year'].isin(year))]['profit-per-person'].values
-        ys = pref_df.loc[(pref_df['prefecture']==prefecture) & (pref_df['year'].isin(year))]['total-pop'].values / 10**6
-        #ax.plot(pref_df.loc[(pref_df['prefecture']==prefecture) &(pref_df['year'].isin(year))]['profitperperson'],pref_df.loc[(pref_df['prefecture']==prefecture) & (pref_df['year'].isin(year))]['total-pop'])
-        if xs[1]<0:
+    deltas_jp = {
+        "東京都": [0, -0.5],
+        "神奈川県": [200, 0.5],
+        "大阪府": [0, -0.5],
+        "愛知県": [-2200, 0.2],
+        "埼玉県": [200, -0.4],
+        "千葉県": [-2000, 0],
+        "兵庫県": [0, -0.5],
+        "福岡県": [-100, 0.5],
+        "北海道": [0, -0.5],
+        "静岡県": [0, 0.5],
+        "茨城県": [900, 0],
+        "京都府": [-1100, -0.3],
+        "広島県": [0, +0.5],
+        "奈良県": [-1700, 0],
+        "佐賀県": [5900, -0.4],
+        "鹿児島県": [4900, 0],
+        "宮崎県": [5900, 0.5],
+        "山形県": [4000, 0.5],
+        "熊本県": [1500, 0.5],
+        "新潟県": [1200, 0.55],
+        "徳島県": [0, -0.5],
+        "高知県": [2000, -0.5],
+        "山梨県": [7000, -0.5],
+    }
+    deltas_en = {
+        "東京都": [0, -0.5],
+        "神奈川県": [200, 0.5],
+        "大阪府": [0, -0.5],
+        "愛知県": [-2200, 0.1],
+        "埼玉県": [200, -0.4],
+        "千葉県": [-2300, 0],
+        "兵庫県": [0, -0.5],
+        "福岡県": [-100, 0.5],
+        "北海道": [0, 0.5],
+        "静岡県": [0, 0.5],
+        "茨城県": [1200, 0],
+        "京都府": [-200, -0.4],
+        "広島県": [0, +0.5],
+        "奈良県": [0, -0.5],
+        "佐賀県": [5900, -0.4],
+        "鹿児島県": [4900, 0.3],
+        "宮崎県": [6400, 0.5],
+        "山形県": [4000, 0.5],
+        "熊本県": [2500, 0.4],
+        "新潟県": [1800, 0.4],
+        "徳島県": [0, -0.5],
+        "高知県": [2000, -0.4],
+        "山梨県": [7000, -0.5],
+    }
+    for prefecture in pref_df["prefecture"].unique():
+        xs = pref_df.loc[
+            (pref_df["prefecture"] == prefecture) & (pref_df["year"].isin(year))
+        ]["profit-per-person"].values
+        ys = (
+            pref_df.loc[
+                (pref_df["prefecture"] == prefecture) & (pref_df["year"].isin(year))
+            ]["total-pop"].values
+            / 10**6
+        )
+        # ax.plot(pref_df.loc[(pref_df['prefecture']==prefecture) &(pref_df['year'].isin(year))]['profitperperson'],pref_df.loc[(pref_df['prefecture']==prefecture) & (pref_df['year'].isin(year))]['total-pop'])
+        if xs[1] < 0:
             color = samcolors.nice_colors(3)
-        else: 
+        else:
             color = samcolors.nice_colors(0)
-        ax.annotate("", xy=(xs[0], ys[0]), xytext=(xs[1], ys[1]),
-                arrowprops=dict(arrowstyle="<-",shrinkA=0, shrinkB=0,color=color),fontsize=10)
+        ax.annotate(
+            "",
+            xy=(xs[0], ys[0]),
+            xytext=(xs[1], ys[1]),
+            arrowprops=dict(arrowstyle="<-", shrinkA=0, shrinkB=0, color=color),
+            fontsize=10,
+        )
 
         # try: va = vas[prefecture]
         # except KeyError: va = 'center'
         # try: ha = has[prefecture]
         # except KeyError: ha = 'center'
-        if lang == 'jp':
+        if lang == "jp":
             deltas = deltas_jp
         else:
             deltas = deltas_en
-        try: delta = deltas[prefecture]
-        except KeyError: delta = [0,0]
+        try:
+            delta = deltas[prefecture]
+        except KeyError:
+            delta = [0, 0]
 
         if prefecture in deltas.keys():
-            if lang == 'jp':
+            if lang == "jp":
                 label = prefecture.strip("県").strip("都").strip("府")
             else:
-                label = pref_df.loc[pref_df['prefecture']==prefecture, 'prefecture-reading'].iloc[0]
-                label = label.replace('ou','o').replace('oo','o').title()
-            ax.text(np.mean(xs)+delta[0],np.mean(ys)+delta[1],label, fontsize=8, ha='center',va='center',color=cb.grey)
-        
-        if prefecture == '東京都':
-            ax.text(xs[0],ys[0]+.15,year[0], fontsize=8, ha='center',va='bottom')
-            ax.text(xs[1]+300,ys[1]-.2,year[1], fontsize=8, ha='center',va='top')
+                label = pref_df.loc[
+                    pref_df["prefecture"] == prefecture, "prefecture-reading"
+                ].iloc[0]
+                label = label.replace("ou", "o").replace("oo", "o").title()
+            ax.text(
+                np.mean(xs) + delta[0],
+                np.mean(ys) + delta[1],
+                label,
+                fontsize=8,
+                ha="center",
+                va="center",
+                color=cb.grey,
+            )
+
+        if prefecture == "東京都":
+            ax.text(xs[0], ys[0] + 0.15, year[0], fontsize=8, ha="center", va="bottom")
+            ax.text(
+                xs[1] + 300, ys[1] - 0.2, year[1], fontsize=8, ha="center", va="top"
+            )
 
     for suffix in output_filetypes:
-        fig.savefig(PLOT_FOLDER+'population_vs_profitperperson_'+lang+'.'+suffix, transparent=True,bbox_inches="tight")
-    plt.close('all')
+        fig.savefig(
+            PLOT_FOLDER + "population_vs_profitperperson_" + lang + "." + suffix,
+            transparent=True,
+            bbox_inches="tight",
+        )
+    plt.close("all")
 
-shutil.copy(PLOT_FOLDER+'population_vs_profitperperson_en.pdf',productionPlotFolder)
-shutil.copy(PLOT_FOLDER+'population_vs_profitperperson_jp.pdf',productionPlotFolder)
+shutil.copy(PLOT_FOLDER + "population_vs_profitperperson_en.pdf", productionPlotFolder)
+shutil.copy(PLOT_FOLDER + "population_vs_profitperperson_jp.pdf", productionPlotFolder)
 
 import plotly.express as px
 import plotly.graph_objects as go
-fig = px.line(pref_df.loc[pref_df['year'].isin(year)], y='total-pop',x='profit-per-person', color='prefecture',hover_data=['prefecture', 'year'],markers=True)
+
+fig = px.line(
+    pref_df.loc[pref_df["year"].isin(year)],
+    y="total-pop",
+    x="profit-per-person",
+    color="prefecture",
+    hover_data=["prefecture", "year"],
+    markers=True,
+)
 # fig = px.scatter(furusato_pref_sum_df, x='donations',y='netgainminusdeductions', color='prefecture',hover_data=['prefecture'])
-fig.write_html(PLOT_FOLDER+'/population_vs_profitperperson.html')
-plt.close('all')
+fig.write_html(PLOT_FOLDER + "/population_vs_profitperperson.html")
+plt.close("all")
 
 ##############################
 #### PROFIT VS STRENGTH -- PREF   ##
 ##############################
 year = [2021]
-titles = {'en': r"\textbf{Profits don't go to the neediest prefectures}",
-                 'jp': r"\textbf{利益は困難な都道府県にいってない}"}
-subtitles = {'en': r"Prefectural profit per capita (" + str(year[0])+ r") vs economic strength",
-                    'jp': r"各都道府県の純利益（" + str(year[0])+"年）"+r"対財政力指標"}
-#ylabels = {'en': r'Profit per capita', 'jp': r'一人当たりの純利益'}
-xlabels = {'en': r'Economic Strength Index', 'jp': r'財政力指標'}
+titles = {
+    "en": r"\textbf{Profits don't go to the neediest prefectures}",
+    "jp": r"\textbf{利益は困難な都道府県にいってない}",
+}
+subtitles = {
+    "en": r"Prefectural profit per capita (" + str(year[0]) + r") vs economic strength",
+    "jp": r"各都道府県の純利益（" + str(year[0]) + "年）" + r"対財政力指標",
+}
+# ylabels = {'en': r'Profit per capita', 'jp': r'一人当たりの純利益'}
+xlabels = {"en": r"Economic Strength Index", "jp": r"財政力指標"}
 
-langs = ['en', 'jp']
+langs = ["en", "jp"]
 for lang in langs:
     fig, ax = cb.handlers()
-    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
-    if lang =='en':
-        cb.set_yLabel(ax, yLabel=r'/person', currency=r'\textyen')
-    if lang =='jp':
-        cb.set_yLabel(ax, yLabel=r'円／人', currency=r'')   
-    cb.set_yTickLabels(ax)
-    
-    ax.set_xlabel(xlabels[lang], color='black')
+    cb.set_title(ax, titles[lang], subtitles[lang])
+    if lang == "en":
+        cb.set_yunit(ax, yunit=r"/person", currency=r"\textyen")
+    if lang == "jp":
+        cb.set_yunit(ax, yunit=r"円／人", currency=r"")
+
+    ax.set_xlabel(xlabels[lang], color="black")
 
     posinds = np.where(
-        pref_df.loc[pref_df['year'].isin(year)]['profit-per-person'] >= 0)
-    neginds = np.where(
-        pref_df.loc[pref_df['year'].isin(year)]['profit-per-person'] < 0)
-    ax.scatter(pref_df.loc[pref_df['year'].isin(year)]['economic-strength-index'].iloc[posinds],
-               pref_df.loc[pref_df['year'].isin(year)]['profit-per-person'].iloc[posinds], color=samcolors.nice_colors(0))
-    ax.scatter(pref_df.loc[pref_df['year'].isin(year)]['economic-strength-index'].iloc[neginds],
-               pref_df.loc[pref_df['year'].isin(year)]['profit-per-person'].iloc[neginds], color=samcolors.nice_colors(3))
+        pref_df.loc[pref_df["year"].isin(year)]["profit-per-person"] >= 0
+    )
+    neginds = np.where(pref_df.loc[pref_df["year"].isin(year)]["profit-per-person"] < 0)
+    ax.scatter(
+        pref_df.loc[pref_df["year"].isin(year)]["economic-strength-index"].iloc[
+            posinds
+        ],
+        pref_df.loc[pref_df["year"].isin(year)]["profit-per-person"].iloc[posinds],
+        color=samcolors.nice_colors(0),
+    )
+    ax.scatter(
+        pref_df.loc[pref_df["year"].isin(year)]["economic-strength-index"].iloc[
+            neginds
+        ],
+        pref_df.loc[pref_df["year"].isin(year)]["profit-per-person"].iloc[neginds],
+        color=samcolors.nice_colors(3),
+    )
 
-    ax.set_xlim([.15, 1])
+    ax.set_xlim([0.15, 1])
     ax.set_ylim([-6200, 21500])
-    ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.1f}'.format))
-    #ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
-    ax.axhline(0, color='black', alpha=.5, ls='--')
+    ax.xaxis.set_major_formatter(FuncFormatter(r"{0:.1f}".format))
+    # ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
+    ax.axhline(0, color="black", alpha=0.5, ls="--")
 
-    positions = {'en':
-              {"神奈川県": 'left', "大阪府": 'top', "愛知県": 'top', "埼玉県": 'top', "兵庫県": 'bottom', "岐阜県":'top', "北海道": 'right', "静岡県": 'top', "茨城県": 'top', "京都府": 'bottom', "奈良県": 'bottom', "佐賀県": 'top', "鹿児島県": 'top', "宮崎県":'bottom',
-                  "山形県":'top', "熊本県": 'right', "新潟県": 'top', "徳島県": 'left', "鳥取県": 'top', "青森県": 'top', "高知県": 'bottom', "山梨県":'top', "和歌山県": 'top', '島根県':'top', '秋田県':'bottom', '福井県':'top', '群馬県':'right'},
-              'jp':   {"神奈川県": 'left', "大阪府": 'top', "愛知県": 'top', "埼玉県": 'top', "兵庫県": 'bottom', "岐阜県":'top', "北海道": 'right', "静岡県": 'top', "茨城県": 'top', "京都府": 'bottom', "奈良県": 'bottom', "佐賀県": 'top', "鹿児島県": 'top', "宮崎県":'bottom',
-                  "山形県":'top', "熊本県": 'right', "新潟県": 'top', "徳島県": 'left', "鳥取県": 'top', "青森県": 'top', "高知県": 'bottom', "山梨県":'top', "和歌山県": 'top', '島根県':'top', '秋田県':'bottom', '福井県':'top','群馬県':'right'}}
-    for prefecture in pref_df['prefecture'].unique():
-        if lang == 'jp':
-                label = prefecture.strip("県").strip("都").strip("府")
+    positions = {
+        "en": {
+            "神奈川県": "left",
+            "大阪府": "top",
+            "愛知県": "top",
+            "埼玉県": "top",
+            "兵庫県": "bottom",
+            "岐阜県": "top",
+            "北海道": "right",
+            "静岡県": "top",
+            "茨城県": "top",
+            "京都府": "bottom",
+            "奈良県": "bottom",
+            "佐賀県": "top",
+            "鹿児島県": "top",
+            "宮崎県": "bottom",
+            "山形県": "top",
+            "熊本県": "right",
+            "新潟県": "top",
+            "徳島県": "left",
+            "鳥取県": "top",
+            "青森県": "top",
+            "高知県": "bottom",
+            "山梨県": "top",
+            "和歌山県": "top",
+            "島根県": "top",
+            "秋田県": "bottom",
+            "福井県": "top",
+            "群馬県": "right",
+        },
+        "jp": {
+            "神奈川県": "left",
+            "大阪府": "top",
+            "愛知県": "top",
+            "埼玉県": "top",
+            "兵庫県": "bottom",
+            "岐阜県": "top",
+            "北海道": "right",
+            "静岡県": "top",
+            "茨城県": "top",
+            "京都府": "bottom",
+            "奈良県": "bottom",
+            "佐賀県": "top",
+            "鹿児島県": "top",
+            "宮崎県": "bottom",
+            "山形県": "top",
+            "熊本県": "right",
+            "新潟県": "top",
+            "徳島県": "left",
+            "鳥取県": "top",
+            "青森県": "top",
+            "高知県": "bottom",
+            "山梨県": "top",
+            "和歌山県": "top",
+            "島根県": "top",
+            "秋田県": "bottom",
+            "福井県": "top",
+            "群馬県": "right",
+        },
+    }
+    for prefecture in pref_df["prefecture"].unique():
+        if lang == "jp":
+            label = prefecture.strip("県").strip("都").strip("府")
         else:
-                label = pref_df.loc[pref_df['prefecture']
-                                          == prefecture, 'prefecture-reading'].iloc[0]
-                label = r'\phantom{h}'+label.replace('ou', 'o').replace('oo', 'o').title()+r'\phantom{g}'
-        
-        x = pref_df.loc[(pref_df['year'].isin(year)) & (
-            pref_df['prefecture'] == prefecture)]['economic-strength-index']
-        y = pref_df.loc[(pref_df['year'].isin(year)) & (
-            pref_df['prefecture'] == prefecture)]['profit-per-person']
+            label = pref_df.loc[
+                pref_df["prefecture"] == prefecture, "prefecture-reading"
+            ].iloc[0]
+            label = (
+                r"\phantom{h}"
+                + label.replace("ou", "o").replace("oo", "o").title()
+                + r"\phantom{g}"
+            )
+
+        x = pref_df.loc[
+            (pref_df["year"].isin(year)) & (pref_df["prefecture"] == prefecture)
+        ]["economic-strength-index"]
+        y = pref_df.loc[
+            (pref_df["year"].isin(year)) & (pref_df["prefecture"] == prefecture)
+        ]["profit-per-person"]
         # if prefecture in deltas[lang].keys():
         if prefecture in positions[lang].keys():
-            #delta = deltas[lang][prefecture]
+            # delta = deltas[lang][prefecture]
             position = positions[lang][prefecture]
-            deltax = 0 
+            deltax = 0
             deltay = 0
-            if lang == 'jp':
+            if lang == "jp":
                 ypad = 600
-                xpad = .01
-            elif lang == 'en':
+                xpad = 0.01
+            elif lang == "en":
                 ypad = 400
                 xpad = 0
-            if position == 'left':
-                va = 'center'
-                ha = 'right'
+            if position == "left":
+                va = "center"
+                ha = "right"
                 deltax -= xpad
-            elif position == 'right':
-                va = 'center'
-                ha = 'left'
+            elif position == "right":
+                va = "center"
+                ha = "left"
                 deltax += xpad
-            elif position == 'top':
-                va = 'bottom'
-                ha = 'center'
+            elif position == "top":
+                va = "bottom"
+                ha = "center"
                 deltay += ypad
-            elif position == 'bottom':
-                va = 'top'
-                ha = 'center'
+            elif position == "bottom":
+                va = "top"
+                ha = "center"
                 deltay -= ypad
-            ax.text(x+deltax, y+deltay, label,
-                    fontsize=8, ha=ha, va=va, color=cb.grey)
+            ax.text(
+                x + deltax, y + deltay, label, fontsize=8, ha=ha, va=va, color=cb.grey
+            )
 
-    #np.mean(pref_df.loc[(pref_df['year'].isin(year)) & (pref_df['prefecture']!='東京都')]['economic-strength-index'])
+    # np.mean(pref_df.loc[(pref_df['year'].isin(year)) & (pref_df['prefecture']!='東京都')]['economic-strength-index'])
     for suffix in output_filetypes:
-        fig.savefig(PLOT_FOLDER+'profitperperson_vs_strength_' +
-                    lang+'.'+suffix, transparent=True, bbox_inches='tight')
-    plt.close('all')
-    shutil.copy(PLOT_FOLDER+'profitperperson_vs_strength_' +
-                lang+'.pdf', productionPlotFolder)
+        fig.savefig(
+            PLOT_FOLDER + "profitperperson_vs_strength_" + lang + "." + suffix,
+            transparent=True,
+            bbox_inches="tight",
+        )
+    plt.close("all")
+    shutil.copy(
+        PLOT_FOLDER + "profitperperson_vs_strength_" + lang + ".pdf",
+        productionPlotFolder,
+    )
 
 
-fig = px.scatter(pref_df.loc[pref_df['year'].isin(
-    year)], x='economic-strength-index', y='profit-per-person', color='prefecture', hover_data=['prefecture'])
-fig.write_html(PLOT_FOLDER+'/profitperperson_vs_strength_pref.html')
-plt.close('all')
+fig = px.scatter(
+    pref_df.loc[pref_df["year"].isin(year)],
+    x="economic-strength-index",
+    y="profit-per-person",
+    color="prefecture",
+    hover_data=["prefecture"],
+)
+fig.write_html(PLOT_FOLDER + "/profitperperson_vs_strength_pref.html")
+plt.close("all")
 
 
 ###################################
@@ -529,62 +1045,112 @@ plt.close('all')
 ###################################
 years = [2021]
 
-colorstring = (r"\definecolor{blue}{rgb}{"+str(samcolors.nice_colors(3))[1:-1]+"}"+
-r"\definecolor{yellow}{rgb}{"+str(samcolors.nice_colors(1))[1:-1]+"}" +
-r"\definecolor{orange}{rgb}{"+str(samcolors.nice_colors(0.5))[1:-1]+"}" +
-r"\definecolor{red}{rgb}{"+str(samcolors.nice_colors(0))[1:-1]+"}" 
+colorstring = (
+    r"\definecolor{blue}{rgb}{"
+    + str(samcolors.nice_colors(3))[1:-1]
+    + "}"
+    + r"\definecolor{yellow}{rgb}{"
+    + str(samcolors.nice_colors(1))[1:-1]
+    + "}"
+    + r"\definecolor{orange}{rgb}{"
+    + str(samcolors.nice_colors(0.5))[1:-1]
+    + "}"
+    + r"\definecolor{red}{rgb}{"
+    + str(samcolors.nice_colors(0))[1:-1]
+    + "}"
 )
-statistic = 'mean'
+statistic = "mean"
 
-titles = {'en':r"\textbf{Average per city / City Strength}", 'jp':r"\textbf{}"}
-subtitles = {'en':colorstring+statistic.title()+r" profit (\textbf{\textcolor{blue}{with}} and \textbf{\textcolor{red}{without}} LAT) of cities by economic strength", 'jp':""}
-scalings = {'en': 10**6, 'jp': 10**8}
-cb = CircusBoy(baseFont='Helvetica', cjkFont='Hiragino Maru Gothic Pro',titleFont='Helvetica',textFont='Helvetica', fontsize=12,figsize=(6,4))
+titles = {"en": r"\textbf{Average per city / City Strength}", "jp": r"\textbf{}"}
+subtitles = {
+    "en": colorstring
+    + statistic.title()
+    + r" profit (\textbf{\textcolor{blue}{with}} and \textbf{\textcolor{red}{without}} LAT) of cities by economic strength",
+    "jp": "",
+}
+scalings = {"en": 10**6, "jp": 10**8}
+cb = CircusBoy(
+    baseFont="Helvetica",
+    cjkFont="Hiragino Maru Gothic Pro",
+    titleFont="Helvetica",
+    textFont="Helvetica",
+    fontsize=12,
+    figsize=(6, 4),
+)
 for lang in langs:
     fig, ax = cb.handlers()
-    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
-    if statistic == 'median':
-        ax.set_ylim([-.5*10**9/scalings[lang],.15*10**9/scalings[lang]])
-    if statistic == 'mean':
-        ax.set_ylim([-1.8*10**9/scalings[lang],.55*10**9/scalings[lang]])
+    cb.set_title(ax, titles[lang], subtitles[lang])
+    if statistic == "median":
+        ax.set_ylim([-0.5 * 10**9 / scalings[lang], 0.15 * 10**9 / scalings[lang]])
+    if statistic == "mean":
+        ax.set_ylim([-1.8 * 10**9 / scalings[lang], 0.55 * 10**9 / scalings[lang]])
 
-    cb.set_yTickLabels(ax)
-    
-    if lang =='en':
-        cb.set_yLabel(ax, yLabel=r'mn', currency=r'\textyen')
-    if lang =='jp':
-        cb.set_yLabel(ax, yLabel=r'億円', currency=r'')   
+    if lang == "en":
+        cb.set_yunit(ax, yunit=r"mn", currency=r"\textyen")
+    if lang == "jp":
+        cb.set_yunit(ax, yunit=r"億円", currency=r"")
     # cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
     # cb.set_byline(ax, "by Sam Passaglia")
 
-    df = local_df_no23.loc[local_df_no23['year'].isin(years)]
+    df = local_df_no23.loc[local_df_no23["year"].isin(years)]
 
-    #bins = np.arange(np.min(df['economic-strength-index-prev3yearavg']),1.,.07)
-    #bins = np.append(bins,[1.2,1.4,2.3])
-    bins = 'auto'
-    hist_unweighted, bins = np.histogram(df['economic-strength-index-prev3yearavg'], bins=bins)
-    #TODO: median instead of mean
+    # bins = np.arange(np.min(df['economic-strength-index-prev3yearavg']),1.,.07)
+    # bins = np.append(bins,[1.2,1.4,2.3])
+    bins = "auto"
+    hist_unweighted, bins = np.histogram(
+        df["economic-strength-index-prev3yearavg"], bins=bins
+    )
+    # TODO: median instead of mean
     ## per city
-    hist_inclckz, _, _ = binned_statistic(df['economic-strength-index-prev3yearavg'], df['profit-incl-ckz'], statistic=statistic, bins=bins)
-    #ax.bar(bins[:-1], hist_inclckz/scalings[lang],width=bins[1:]-bins[:-1],align='edge', alpha=.5,edgecolor=samcolors.nice_colors(2), fill=False)
-    ax.plot((bins[:-1]+bins[1:])/2, hist_inclckz/scalings[lang],color=samcolors.nice_colors(3))
+    hist_inclckz, _, _ = binned_statistic(
+        df["economic-strength-index-prev3yearavg"],
+        df["profit-incl-ckz"],
+        statistic=statistic,
+        bins=bins,
+    )
+    # ax.bar(bins[:-1], hist_inclckz/scalings[lang],width=bins[1:]-bins[:-1],align='edge', alpha=.5,edgecolor=samcolors.nice_colors(2), fill=False)
+    ax.plot(
+        (bins[:-1] + bins[1:]) / 2,
+        hist_inclckz / scalings[lang],
+        color=samcolors.nice_colors(3),
+    )
 
+    hist, _, _ = binned_statistic(
+        df["economic-strength-index-prev3yearavg"],
+        df["netgainminusdeductions"],
+        statistic=statistic,
+        bins=bins,
+    )
+    # ax.bar(bins[:-1], hist/scalings[lang],width=bins[1:]-bins[:-1],align='edge',alpha=.5,edgecolor=samcolors.nice_colors(0), fill=False)
+    ax.plot(
+        (bins[:-1] + bins[1:]) / 2,
+        hist / scalings[lang],
+        color=samcolors.nice_colors(0),
+    )
 
-    hist, _, _ = binned_statistic(df['economic-strength-index-prev3yearavg'], df['netgainminusdeductions'], statistic=statistic, bins=bins)
-    #ax.bar(bins[:-1], hist/scalings[lang],width=bins[1:]-bins[:-1],align='edge',alpha=.5,edgecolor=samcolors.nice_colors(0), fill=False)
-    ax.plot((bins[:-1]+bins[1:])/2, hist/scalings[lang],color=samcolors.nice_colors(0))
-
-    ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.2f}'.format))
-    ax.set_xlim([0,1.3])
-
+    ax.xaxis.set_major_formatter(FuncFormatter(r"{0:.2f}".format))
+    ax.set_xlim([0, 1.3])
 
     for suffix in output_filetypes:
-        fig.savefig(PLOT_FOLDER+'profit-per-city-distribution_'+statistic+'_'+lang+'.'+suffix, transparent=True, bbox_inches='tight')
-    shutil.copy(PLOT_FOLDER+'profit-per-city-distribution_'+statistic+'_'+lang+'.pdf',productionPlotFolder)
+        fig.savefig(
+            PLOT_FOLDER
+            + "profit-per-city-distribution_"
+            + statistic
+            + "_"
+            + lang
+            + "."
+            + suffix,
+            transparent=True,
+            bbox_inches="tight",
+        )
+    shutil.copy(
+        PLOT_FOLDER + "profit-per-city-distribution_" + statistic + "_" + lang + ".pdf",
+        productionPlotFolder,
+    )
 
-    plt.close('all')
+    plt.close("all")
 
-#df.loc[(df['ckz']>0) & (df['economic-strength-index-prev3yearavg']>1)][['prefecturecity', 'economic-strength-index','economic-strength-index-prev3yearavg','ckz','ckz-noFN']]
+# df.loc[(df['ckz']>0) & (df['economic-strength-index-prev3yearavg']>1)][['prefecturecity', 'economic-strength-index','economic-strength-index-prev3yearavg','ckz','ckz-noFN']]
 
 
 ###################################
@@ -592,48 +1158,102 @@ for lang in langs:
 ###################################
 years = [2021]
 
-colorstring = (r"\definecolor{blue}{rgb}{"+str(samcolors.nice_colors(3))[1:-1]+"}"+
-r"\definecolor{yellow}{rgb}{"+str(samcolors.nice_colors(1))[1:-1]+"}" +
-r"\definecolor{orange}{rgb}{"+str(samcolors.nice_colors(0.5))[1:-1]+"}" +
-r"\definecolor{red}{rgb}{"+str(samcolors.nice_colors(0))[1:-1]+"}" 
+colorstring = (
+    r"\definecolor{blue}{rgb}{"
+    + str(samcolors.nice_colors(3))[1:-1]
+    + "}"
+    + r"\definecolor{yellow}{rgb}{"
+    + str(samcolors.nice_colors(1))[1:-1]
+    + "}"
+    + r"\definecolor{orange}{rgb}{"
+    + str(samcolors.nice_colors(0.5))[1:-1]
+    + "}"
+    + r"\definecolor{red}{rgb}{"
+    + str(samcolors.nice_colors(0))[1:-1]
+    + "}"
 )
 
-titles = {'en':r"\textbf{Total Profit vs Strength}", 'jp':r"\textbf{}"}
-subtitles = {'en':colorstring+r"Total profit (\textbf{\textcolor{blue}{with}} and \textbf{\textcolor{red}{without}} LAT) of cities by economic strength", 'jp':""}
-scalings = {'en': 10**9, 'jp': 10**8}
-cb = CircusBoy(baseFont='Helvetica', cjkFont='Hiragino Maru Gothic Pro',titleFont='Helvetica',textFont='Helvetica', fontsize=12,figsize=(6,4))
+titles = {"en": r"\textbf{Total Profit vs Strength}", "jp": r"\textbf{}"}
+subtitles = {
+    "en": colorstring
+    + r"Total profit (\textbf{\textcolor{blue}{with}} and \textbf{\textcolor{red}{without}} LAT) of cities by economic strength",
+    "jp": "",
+}
+scalings = {"en": 10**9, "jp": 10**8}
+cb = CircusBoy(
+    baseFont="Helvetica",
+    cjkFont="Hiragino Maru Gothic Pro",
+    titleFont="Helvetica",
+    textFont="Helvetica",
+    fontsize=12,
+    figsize=(6, 4),
+)
 
 for lang in langs:
     fig, ax = cb.handlers()
-    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
-    cb.set_yTickLabels(ax)
-    if lang =='en':
-        cb.set_yLabel(ax, yLabel=r'bn', currency=r'\textyen')
-    if lang =='jp':
-        cb.set_yLabel(ax, yLabel=r'億円', currency=r'')   
+    cb.set_title(ax, titles[lang], subtitles[lang])
+
+    if lang == "en":
+        cb.set_yunit(ax, yunit=r"bn", currency=r"\textyen")
+    if lang == "jp":
+        cb.set_yunit(ax, yunit=r"億円", currency=r"")
     # cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
     # cb.set_byline(ax, "by Sam Passaglia")
 
-    df = local_df_no23.loc[local_df_no23['year'].isin(years)]
+    df = local_df_no23.loc[local_df_no23["year"].isin(years)]
 
-    bins = np.linspace(0,2,30)
-    bins = 'auto'
-    hist_unweighted, bins = np.histogram(df['economic-strength-index-prev3yearavg'], bins=bins)
+    bins = np.linspace(0, 2, 30)
+    bins = "auto"
+    hist_unweighted, bins = np.histogram(
+        df["economic-strength-index-prev3yearavg"], bins=bins
+    )
 
-    hist_inclckz, _, _ = binned_statistic(df['economic-strength-index-prev3yearavg'], df['profit-incl-ckz'], statistic='sum', bins=bins)
-    ax.bar(bins[:-1], hist_inclckz/scalings[lang],width=bins[1:]-bins[:-1],align='edge', alpha=.5,edgecolor=samcolors.nice_colors(2), fill=False)
+    hist_inclckz, _, _ = binned_statistic(
+        df["economic-strength-index-prev3yearavg"],
+        df["profit-incl-ckz"],
+        statistic="sum",
+        bins=bins,
+    )
+    ax.bar(
+        bins[:-1],
+        hist_inclckz / scalings[lang],
+        width=bins[1:] - bins[:-1],
+        align="edge",
+        alpha=0.5,
+        edgecolor=samcolors.nice_colors(2),
+        fill=False,
+    )
 
-    hist, _, _ = binned_statistic(df['economic-strength-index-prev3yearavg'], df['netgainminusdeductions'], statistic='sum', bins=bins)
-    ax.bar(bins[:-1], hist/scalings[lang],width=bins[1:]-bins[:-1],align='edge',alpha=.5,edgecolor=samcolors.nice_colors(0), fill=False)
+    hist, _, _ = binned_statistic(
+        df["economic-strength-index-prev3yearavg"],
+        df["netgainminusdeductions"],
+        statistic="sum",
+        bins=bins,
+    )
+    ax.bar(
+        bins[:-1],
+        hist / scalings[lang],
+        width=bins[1:] - bins[:-1],
+        align="edge",
+        alpha=0.5,
+        edgecolor=samcolors.nice_colors(0),
+        fill=False,
+    )
 
-    ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.2f}'.format))
-    ax.set_xlim([0,1.3])
+    ax.xaxis.set_major_formatter(FuncFormatter(r"{0:.2f}".format))
+    ax.set_xlim([0, 1.3])
 
     for suffix in output_filetypes:
-        fig.savefig(PLOT_FOLDER+'total-profit-distribution_'+lang+'.'+suffix, transparent=True, bbox_inches='tight')
-    shutil.copy(PLOT_FOLDER+'total-profit-distribution_'+lang+'.pdf',productionPlotFolder)
+        fig.savefig(
+            PLOT_FOLDER + "total-profit-distribution_" + lang + "." + suffix,
+            transparent=True,
+            bbox_inches="tight",
+        )
+    shutil.copy(
+        PLOT_FOLDER + "total-profit-distribution_" + lang + ".pdf", productionPlotFolder
+    )
 
-    plt.close('all')
+    plt.close("all")
 
 
 ####################################################################################
@@ -642,47 +1262,112 @@ for lang in langs:
 
 years = [2021]
 
-colorstring = (r"\definecolor{blue}{rgb}{"+str(samcolors.nice_colors(3))[1:-1]+"}"+
-r"\definecolor{yellow}{rgb}{"+str(samcolors.nice_colors(1))[1:-1]+"}" +
-r"\definecolor{orange}{rgb}{"+str(samcolors.nice_colors(0.5))[1:-1]+"}" +
-r"\definecolor{red}{rgb}{"+str(samcolors.nice_colors(0))[1:-1]+"}" 
+colorstring = (
+    r"\definecolor{blue}{rgb}{"
+    + str(samcolors.nice_colors(3))[1:-1]
+    + "}"
+    + r"\definecolor{yellow}{rgb}{"
+    + str(samcolors.nice_colors(1))[1:-1]
+    + "}"
+    + r"\definecolor{orange}{rgb}{"
+    + str(samcolors.nice_colors(0.5))[1:-1]
+    + "}"
+    + r"\definecolor{red}{rgb}{"
+    + str(samcolors.nice_colors(0))[1:-1]
+    + "}"
 )
 
-titles = {'en':r"\textbf{Average per person / City Strength}", 'jp':r"\textbf{}"}
-subtitles = {'en':colorstring+r"Average profit per person (\textbf{\textcolor{blue}{with}} and \textbf{\textcolor{red}{without}} LAT) of cities by economic strength", 'jp':""}
-scalings = {'en': 1, 'jp': 1}
-cb = CircusBoy(baseFont='Helvetica', cjkFont   ='Hiragino Maru Gothic Pro',titleFont='Helvetica',textFont='Helvetica', fontsize=12,figsize=(6,4))
+titles = {"en": r"\textbf{Average per person / City Strength}", "jp": r"\textbf{}"}
+subtitles = {
+    "en": colorstring + r"Average profit per person of cities by economic strength",
+    "jp": "",
+}  # (\textbf{\textcolor{blue}{with}} and \textbf{\textcolor{red}{without}} LAT)
+scalings = {"en": 1, "jp": 1}
+cb = CircusBoy(
+    baseFont="Helvetica",
+    cjkFont="Hiragino Maru Gothic Pro",
+    titleFont="Helvetica",
+    textFont="Helvetica",
+    fontsize=12,
+    figsize=(6, 4),
+)
 
 for lang in langs:
     fig, ax = cb.handlers()
-    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
-    cb.set_yTickLabels(ax)
-    if lang =='en':
-        cb.set_yLabel(ax, yLabel=r'', currency=r'\textyen')
-    if lang =='jp':
-        cb.set_yLabel(ax, yLabel=r'円', currency=r'')   
+    cb.set_title(ax, titles[lang], subtitles[lang])
+
+    if lang == "en":
+        cb.set_yunit(ax, yunit=r"", currency=r"\textyen")
+    if lang == "jp":
+        cb.set_yunit(ax, yunit=r"円", currency=r"")
     # cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
-    # cb.set_byline(ax, "by Sam Passaglia")
+    cb.set_byline(ax, "サム・パッサリア")
 
-    df = local_df_no23.loc[local_df_no23['year'].isin(years)]
-    
-    ax.scatter(df['economic-strength-index-prev3yearavg'],df['profit-per-person-incl-ckz'], alpha=.1,color=samcolors.nice_colors(3))
+    df = local_df_no23.loc[local_df_no23["year"].isin(years)]
 
-    bins = np.linspace(0,2,30)
-    bins = 'auto'
-    hist_unweighted, bins = np.histogram(df['economic-strength-index-prev3yearavg'], bins=bins)
+    ax.scatter(
+        df["economic-strength-index-prev3yearavg"],
+        (
+            df["netgainminusdeductions"]
+            + df["profit-from-ckz"]
+            + df["profit-from-special-debt"]
+        )
+        / df["total-pop"],
+        alpha=0.1,
+        color=samcolors.nice_colors(0),
+    )
 
-    hist_popweighted, bins = np.histogram(df['economic-strength-index-prev3yearavg'], bins=bins,weights=df['total-pop'])
+    ax.scatter(
+        df["economic-strength-index-prev3yearavg"],
+        df["profit-per-person-incl-ckz"],
+        alpha=0.1,
+        color=samcolors.nice_colors(3),
+    )
 
-    hist_inclckz, _, _ = binned_statistic(df['economic-strength-index-prev3yearavg'], df['profit-per-person-incl-ckz'], statistic='median', bins=bins)
-    ax.bar(bins[:-1], hist_inclckz/scalings[lang],width=bins[1:]-bins[:-1],align='edge', alpha=.5,edgecolor=samcolors.nice_colors(3), fill=False)
+    bins = np.linspace(0, 2, 30)
+    bins = "auto"
+    hist_unweighted, bins = np.histogram(
+        df["economic-strength-index-prev3yearavg"], bins=bins
+    )
 
-    hist, _, _ = binned_statistic(df['economic-strength-index-prev3yearavg'], df['profit-per-person'], statistic='median', bins=bins)
-    ax.bar(bins[:-1], hist/scalings[lang],width=bins[1:]-bins[:-1],align='edge',alpha=.5,edgecolor=samcolors.nice_colors(0), fill=False)
-    ax.set_xlim([0,1.3])
+    hist_popweighted, bins = np.histogram(
+        df["economic-strength-index-prev3yearavg"], bins=bins, weights=df["total-pop"]
+    )
 
-    ax.set_ylim([-10000,10000])
-    
+    hist_inclckz, _, _ = binned_statistic(
+        df["economic-strength-index-prev3yearavg"],
+        df["profit-per-person-incl-ckz"],
+        statistic="median",
+        bins=bins,
+    )
+    ax.bar(
+        bins[:-1],
+        hist_inclckz / scalings[lang],
+        width=bins[1:] - bins[:-1],
+        align="edge",
+        alpha=0.5,
+        edgecolor=samcolors.nice_colors(3),
+        fill=False,
+    )
+
+    hist, _, _ = binned_statistic(
+        df["economic-strength-index-prev3yearavg"],
+        df["profit-per-person"],
+        statistic="median",
+        bins=bins,
+    )
+    ax.bar(
+        bins[:-1],
+        hist / scalings[lang],
+        width=bins[1:] - bins[:-1],
+        align="edge",
+        alpha=0.5,
+        edgecolor=samcolors.nice_colors(0),
+        fill=False,
+    )
+    ax.set_xlim([0, 1.3])
+
+    ax.set_ylim([-10000, 10000])
 
     # hist_popweighted, bins = np.histogram(df['economic-strength-index-prev3yearavg'], bins=bins,weights=df['total-pop'])
 
@@ -692,15 +1377,20 @@ for lang in langs:
     # hist, _, _ = binned_statistic(df['economic-strength-index-prev3yearavg'], df['netgainminusdeductions'], statistic='sum', bins=bins)
     # ax.bar(bins[:-1], hist/hist_popweighted/scalings[lang],width=bins[1:]-bins[:-1],align='edge',alpha=.5,edgecolor=samcolors.nice_colors(0), fill=False)
 
-
-    ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.2f}'.format))
+    ax.xaxis.set_major_formatter(FuncFormatter(r"{0:.2f}".format))
 
     for suffix in output_filetypes:
-        fig.savefig(PLOT_FOLDER+'profit-per-person-distribution-'+lang+'.'+suffix, transparent=True, bbox_inches='tight')
-    shutil.copy(PLOT_FOLDER+'profit-per-person-distribution-'+lang+'.pdf',productionPlotFolder)
+        fig.savefig(
+            PLOT_FOLDER + "profit-per-person-distribution-" + lang + "." + suffix,
+            transparent=True,
+            bbox_inches="tight",
+        )
+    shutil.copy(
+        PLOT_FOLDER + "profit-per-person-distribution-" + lang + ".pdf",
+        productionPlotFolder,
+    )
 
-    plt.close('all')
-
+    plt.close("all")
 
 
 # ##############################
@@ -770,26 +1460,25 @@ for lang in langs:
 # plt.close('all')
 
 
-
 ######################################
 ### ORDERED PER PERSON PROFIT-LOSS  ##
 ######################################
 
 # year = 2021
 
-# titles = {'en':r"\textbf{Winners and losers}", 
+# titles = {'en':r"\textbf{Winners and losers}",
 # 'jp':r"\textbf{都道府県の間に、利益格差が広がっている}"}
-# subtitles = {'en':r"Ranked profit per capita ", 
+# subtitles = {'en':r"Ranked profit per capita ",
 # 'jp':str(year) + r"各県の人口と一人当たり純利益の進化"}
 
-# ylabels = {'en':r'Profit per capita (\textyen/person)', 
-# 'jp':r'人口 (百万人）'} 
+# ylabels = {'en':r'Profit per capita (\textyen/person)',
+# 'jp':r'人口 (百万人）'}
 # langs = ['en','jp']
 
 # datacolumn = 'profitperperson'
 # #datacolumn = 'netgainminusdeductions'
 
-# for lang in langs: 
+# for lang in langs:
 #     fig, ax = init_plotting(style='nyt')
 #     ax.set_title(subtitles[lang], x=0., y=1.05, fontsize=14,ha='left',va='bottom',wrap=True)
 #     fig.suptitle(titles[lang], x=0,y=1.2, fontsize=18,ha='left',va='bottom', transform=ax.transAxes, wrap=True)
@@ -800,7 +1489,7 @@ for lang in langs:
 
 #     #ax.xaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
 #     ax.yaxis.set_major_formatter(FuncFormatter(r'{0:.0f}'.format))
-    
+
 #     winners = fn_pop_pref_df.loc[(fn_pop_pref_df['year']==year) & (fn_pop_pref_df[datacolumn]>0)].sort_values(datacolumn,ascending=False)
 #     losers = fn_pop_pref_df.loc[(fn_pop_pref_df['year']==year) & (fn_pop_pref_df[datacolumn]<0)].sort_values(datacolumn,ascending=False)
 
@@ -809,14 +1498,14 @@ for lang in langs:
 
 #     ax.bar_label(barwin, winners['prefecture'],padding=1, rotation=10,ha='left', va='bottom')
 
-#     # for prefecture in fn_pop_pref_df['prefecture'].unique(): 
+#     # for prefecture in fn_pop_pref_df['prefecture'].unique():
 
 #     #     xs = fn_pop_pref_df.loc[(fn_pop_pref_df['prefecture']==prefecture) &(fn_pop_pref_df['year'].isin(year))]['profitperperson'].values
 #     #     ys = fn_pop_pref_df.loc[(fn_pop_pref_df['prefecture']==prefecture) & (fn_pop_pref_df['year'].isin(year))]['total-pop'].values / 10**6
 #     #     #ax.plot(fn_pop_pref_df.loc[(fn_pop_pref_df['prefecture']==prefecture) &(fn_pop_pref_df['year'].isin(year))]['profitperperson'],fn_pop_pref_df.loc[(fn_pop_pref_df['prefecture']==prefecture) & (fn_pop_pref_df['year'].isin(year))]['total-pop'])
 #     #     if xs[1]<0:
 #     #         color = samcolors.nice_colors(3)
-#     #     else: 
+#     #     else:
 #     #         color = samcolors.nice_colors(0)
 #     #     ax.annotate("", xy=(xs[0], ys[0]), xytext=(xs[1], ys[1]),
 #     #             arrowprops=dict(arrowstyle="<-",shrinkA=0, shrinkB=0,color=color),fontsize=10)
@@ -835,7 +1524,7 @@ for lang in langs:
 #     #             label = pref_names_df.loc[pref_names_df['prefecture']==prefecture, 'prefecture-reading'].iloc[0]
 #     #             label = label.replace('ou','o').replace('oo','o').title()
 #     #         ax.text(np.mean(xs)+delta[0],np.mean(ys)+delta[1],label, fontsize=8, ha='center',va='center')
-        
+
 #     #     if prefecture == '東京都':
 #     #         ax.text(xs[0],ys[0]+.15,year[0], fontsize=8, ha='center',va='bottom')
 #     #         ax.text(xs[1]+300,ys[1]-.2,year[1], fontsize=8, ha='center',va='top')
