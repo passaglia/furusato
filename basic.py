@@ -8,7 +8,7 @@ import samplot.colors as samcolors
 import shutil
 from matplotlib.ticker import FuncFormatter
 
-from data import furusato_df, furusato_rough_df, annual_df, rough_annual_df, local_df
+from data import furusato_df, furusato_rough_df, annual_df, annual_rough_df, local_df
 
 from config import productionPlotFolder
 
@@ -52,11 +52,11 @@ predatadonations = list(
 
 for lang in langs:
     fig, ax = cb.handlers()
-    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
+    cb.set_title(ax, titles[lang], subtitles[lang])
     if lang == "en":
-        cb.set_yLabel(ax, yLabel=r"bn", currency=r"\textyen")
+        cb.set_yunit(ax, unit=r"bn", currency=r"\textyen")
     if lang == "jp":
-        cb.set_yLabel(ax, yLabel=r"億円", currency=r"")
+        cb.set_yunit(ax, unit=r"億円", currency=r"")
 
     cb.set_source(ax, "Data: Ministry of Internal Affairs", loc="outside")
     cb.set_byline(ax, "Sam Passaglia")
@@ -67,7 +67,7 @@ for lang in langs:
         np.array(predatadonations + list(annual_df["donations"])) / scalings[lang],
         color=samcolors.nice_colors(3),
     )
-    # ax.plot(rough_annual_df.year, rough_annual_df['donations']/scalings[lang], color=samcolors.nice_colors(3))
+    # ax.plot(annual_rough_df.year, annual_rough_df['donations']/scalings[lang], color=samcolors.nice_colors(3))
     ax.xaxis.set_major_formatter(FuncFormatter(r"{0:.0f}".format))
     ax.set_ylim([0, 831 * scalings["en"] / scalings[lang]])
     for suffix in output_filetypes:
@@ -123,7 +123,7 @@ langs = ["en", "jp"]
 
 for lang in langs:
     fig, ax = cb.handlers()
-    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
+    cb.set_title(ax, titles[lang], subtitles[lang])
 
     # cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
     # cb.set_byline(ax, "Sam Passaglia")
@@ -184,7 +184,6 @@ for lang in langs:
     ax.yaxis.set_major_formatter(FuncFormatter(r"{0:.0f}\%".format))
     ax.set_xticks(list(annual_df.year))
     ax.set_ylim([0, 57])
-    # cb.set_yLabel(ax, yLabel=r'%', currency=r'')
     for suffix in output_filetypes:
         fig.savefig(
             PLOT_FOLDER + suffix + "/" + "cost_" + lang + "." + suffix,
@@ -373,15 +372,15 @@ subtitles = {
 
 for lang in langs:
     fig, ax = cb.handlers()
-    cb.set_titleSubtitle(ax, titles[lang], subtitles[lang])
+    cb.set_title(ax, titles[lang], subtitles[lang])
 
     # cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
     # cb.set_byline(ax, "Sam Passaglia")
     ax.set_ylim(0, 51)
-    ax.set_xlim(min(rough_annual_df.year) - 1.7, max(rough_annual_df.year) + 0.75)
+    ax.set_xlim(min(annual_rough_df.year) - 1.7, max(annual_rough_df.year) + 0.75)
 
     fraction_list = []
-    for i, year in enumerate(rough_annual_df.year):
+    for i, year in enumerate(annual_rough_df.year):
         donations = furusato_rough_df.loc[furusato_rough_df["year"] == year][
             "donations"
         ].values
@@ -391,7 +390,7 @@ for lang in langs:
         # print(year, ' Herfindahl–Hirschman Index Percentage Version: ', np.sum((np.array(donations)/total_donations*100)**2))
         fraction_list.append(np.sum(donations[:topN] / total_donations))
     ax.bar(
-        rough_annual_df.year,
+        annual_rough_df.year,
         np.array(fraction_list) * 100,
         color=samcolors.nice_colors(3),
     )

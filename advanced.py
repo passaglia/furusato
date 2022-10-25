@@ -109,65 +109,65 @@ fig = px.scatter(
 fig.write_html(PLOT_FOLDER + "/profit_vs_pop.html")
 plt.close("all")
 
-##############################
-#### PROFIT AND POP CHANGE  ##
-##############################
+# ##############################
+# #### PROFIT AND POP CHANGE  ##
+# ##############################
 
-fig, ax = cb.handlers()
-title = r"Population Change vs Profit"
-# subtitle = r"(1m people)"
-# ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(
-    title, x=0, y=1.15, fontsize=18, ha="left", va="bottom", transform=ax.transAxes
-)
-year = [2020]
-ax.scatter(
-    local_df.loc[local_df["year"].isin(year)]["in-minus-out-rate"],
-    local_df.loc[local_df["year"].isin(year)]["netgainminusdeductions"],
-)
-for suffix in output_filetypes:
-    fig.savefig(PLOT_FOLDER + "profit_vs_popchange." + suffix, transparent=True)
-plt.close("all")
+# fig, ax = cb.handlers()
+# title = r"Population Change vs Profit"
+# # subtitle = r"(1m people)"
+# # ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+# fig.suptitle(
+#     title, x=0, y=1.15, fontsize=18, ha="left", va="bottom", transform=ax.transAxes
+# )
+# year = [2020]
+# ax.scatter(
+#     local_df.loc[local_df["year"].isin(year)]["in-minus-out-rate"],
+#     local_df.loc[local_df["year"].isin(year)]["netgainminusdeductions"],
+# )
+# for suffix in output_filetypes:
+#     fig.savefig(PLOT_FOLDER + "profit_vs_popchange." + suffix, transparent=True)
+# plt.close("all")
 
-fig = px.scatter(
-    local_df.loc[local_df["year"].isin(year)],
-    x="in-minus-out-rate",
-    y="netgainminusdeductions",
-    color="prefecture",
-    hover_data=["code", "prefecture", "city"],
-)
-fig.write_html(PLOT_FOLDER + "/profit_vs_popchange.html")
-plt.close("all")
+# fig = px.scatter(
+#     local_df.loc[local_df["year"].isin(year)],
+#     x="in-minus-out-rate",
+#     y="netgainminusdeductions",
+#     color="prefecture",
+#     hover_data=["code", "prefecture", "city"],
+# )
+# fig.write_html(PLOT_FOLDER + "/profit_vs_popchange.html")
+# plt.close("all")
 
-##############################
-#### DONATIONS AND POP CHANGE  ##
-##############################
+# ##############################
+# #### DONATIONS AND POP CHANGE  ##
+# ##############################
 
-fig, ax = cb.handlers()
-title = r"Population Change vs Donations"
-# subtitle = r"(1m people)"
-# ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
-fig.suptitle(
-    title, x=0, y=1.15, fontsize=18, ha="left", va="bottom", transform=ax.transAxes
-)
-year = [2020]
-ax.scatter(
-    local_df.loc[local_df["year"].isin(year)]["in-minus-out-rate"],
-    local_df.loc[local_df["year"].isin(year)]["donations"],
-)
-for suffix in output_filetypes:
-    fig.savefig(PLOT_FOLDER + "profit_vs_popchange." + suffix, transparent=True)
-plt.close("all")
+# fig, ax = cb.handlers()
+# title = r"Population Change vs Donations"
+# # subtitle = r"(1m people)"
+# # ax.set_title(subtitle, x=0., y=1.0, fontsize=14,ha='left',va='bottom')
+# fig.suptitle(
+#     title, x=0, y=1.15, fontsize=18, ha="left", va="bottom", transform=ax.transAxes
+# )
+# year = [2020]
+# ax.scatter(
+#     local_df.loc[local_df["year"].isin(year)]["in-minus-out-rate"],
+#     local_df.loc[local_df["year"].isin(year)]["donations"],
+# )
+# for suffix in output_filetypes:
+#     fig.savefig(PLOT_FOLDER + "profit_vs_popchange." + suffix, transparent=True)
+# plt.close("all")
 
-fig = px.scatter(
-    local_df.loc[local_df["year"].isin(year)],
-    x="in-minus-out-rate",
-    y="donations",
-    color="prefecture",
-    hover_data=["code", "prefecture", "city"],
-)
-fig.write_html(PLOT_FOLDER + "/profit_vs_popchange.html")
-plt.close("all")
+# fig = px.scatter(
+#     local_df.loc[local_df["year"].isin(year)],
+#     x="in-minus-out-rate",
+#     y="donations",
+#     color="prefecture",
+#     hover_data=["code", "prefecture", "city"],
+# )
+# fig.write_html(PLOT_FOLDER + "/profit_vs_popchange.html")
+# plt.close("all")
 
 ##############################
 #### DONATIONS AND STRENGTH ##
@@ -703,14 +703,14 @@ langs = ["en", "jp"]
 
 for lang in langs:
     fig, ax = cb.handlers()
-    if lang == "en":
-        cb.set_yunit(ax, yunit=r" million people", currency=r"")
-    if lang == "jp":
-        cb.set_yunit(ax, yunit=r"百万人", currency=r"")
+    cb.set_title(ax, titles[lang], subtitles[lang])
     ax.set_yticks([0, 5, 10, 15, 20])
     ax.set_ylim([0, 1.55 * 10])
     ax.set_xlim([-11000, 21000])
-    cb.set_title(ax, titles[lang], subtitles[lang])
+    if lang == "en":
+        cb.set_yunit(ax, unit=r" million people", currency=r"")
+    if lang == "jp":
+        cb.set_yunit(ax, unit=r"百万人", currency=r"")
 
     ax.set_xlabel(xlabels[lang], color="black")
     # ax.set_ylabel(ylabels[lang],color='black')
@@ -873,9 +873,9 @@ for lang in langs:
     fig, ax = cb.handlers()
     cb.set_title(ax, titles[lang], subtitles[lang])
     if lang == "en":
-        cb.set_yunit(ax, yunit=r"/person", currency=r"\textyen")
+        cb.set_yunit(ax, unit=r"/person", currency=r"\textyen")
     if lang == "jp":
-        cb.set_yunit(ax, yunit=r"円／人", currency=r"")
+        cb.set_yunit(ax, unit=r"円／人", currency=r"")
 
     ax.set_xlabel(xlabels[lang], color="black")
 
@@ -1086,9 +1086,9 @@ for lang in langs:
         ax.set_ylim([-1.8 * 10**9 / scalings[lang], 0.55 * 10**9 / scalings[lang]])
 
     if lang == "en":
-        cb.set_yunit(ax, yunit=r"mn", currency=r"\textyen")
+        cb.set_yunit(ax, unit=r"mn", currency=r"\textyen")
     if lang == "jp":
-        cb.set_yunit(ax, yunit=r"億円", currency=r"")
+        cb.set_yunit(ax, unit=r"億円", currency=r"")
     # cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
     # cb.set_byline(ax, "by Sam Passaglia")
 
@@ -1194,9 +1194,9 @@ for lang in langs:
     cb.set_title(ax, titles[lang], subtitles[lang])
 
     if lang == "en":
-        cb.set_yunit(ax, yunit=r"bn", currency=r"\textyen")
+        cb.set_yunit(ax, unit=r"bn", currency=r"\textyen")
     if lang == "jp":
-        cb.set_yunit(ax, yunit=r"億円", currency=r"")
+        cb.set_yunit(ax, unit=r"億円", currency=r"")
     # cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
     # cb.set_byline(ax, "by Sam Passaglia")
 
@@ -1297,9 +1297,9 @@ for lang in langs:
     cb.set_title(ax, titles[lang], subtitles[lang])
 
     if lang == "en":
-        cb.set_yunit(ax, yunit=r"", currency=r"\textyen")
+        cb.set_yunit(ax, unit=r"", currency=r"\textyen")
     if lang == "jp":
-        cb.set_yunit(ax, yunit=r"円", currency=r"")
+        cb.set_yunit(ax, unit=r"円", currency=r"")
     # cb.set_source(ax, "Data: Ministry of Internal Affairs",loc='outside')
     cb.set_byline(ax, "サム・パッサリア")
 
