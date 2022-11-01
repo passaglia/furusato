@@ -1,0 +1,50 @@
+\documentclass{article}\usepackage{booktabs}\usepackage{makecell}
+        \usepackage{xeCJK}
+        %\setCJKmainfont{Hiragino Maru Gothic Pro}
+        %\setCJKmainfont[Scale=0.9]{Hiragino Mincho Pro}
+        %\setCJKmainfont{Hiragino Sans}
+        %\setCJKmainfont{Hiragino Kaku Gothic Pro}
+        %\setCJKmainfont{Hiragino Maru Gothic Pro}
+        \newcommand\stringWithFont[2]{\newfontfamily\temporary{#1} \temporary{#2}}
+
+        \usepackage{xcolor}
+        \usepackage{amsmath}
+        \usepackage[utf8]{inputenc}
+        \usepackage{newunicodechar}
+        \newunicodechar{￥}{\textyen}
+        \DeclareTextCommandDefault{\textyen}{%
+        \vphantom{Y}%
+        {\ooalign{Y\cr\hidewidth\yenbars\hidewidth\cr}}%
+        }
+
+        \newcommand{\yenbars}{%
+        \vbox{
+            \hrule height.1ex width.4em
+            \kern.15ex
+            \hrule height.1ex width.4em
+            \kern.3ex
+        }%
+        } 
+
+        \setmainfont{Helvetica}\setCJKmainfont{Hiragino Maru Gothic Pro}\begin{document}
+{\begin{table}
+    \centering
+    \begin{tabular}{llllll}
+        \toprule
+           & city       & netgainminusdeductions & profit-from-ckz & profit-from-special-debt & profit-incl-ckz-incl-debt \\
+        \midrule
+        1  & 横浜市     & -227億円               & 42億円          & 130億円                  & -55億円                   \\
+        2  & 名古屋市   & -130                   & 36              & 72                       & -23                       \\
+        3  & 大阪市     & -121                   & -1              & 94                       & -28                       \\
+        4  & 川崎市     & -95                    & 0               & 0                        & -95                       \\
+        5  & 世田谷区   & -83                    & 0               & 0                        & -83                       \\
+        6  & さいたま市 & -73                    & 15              & 40                       & -18                       \\
+        7  & 港区       & -61                    & 0               & 0                        & -61                       \\
+        8  & 福岡市     & -61                    & -12             & 58                       & -14                       \\
+        9  & 神戸市     & -61                    & -14             & 67                       & -8                        \\
+        10 & 札幌市     & -59                    & -27             & 77                       & -9                        \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\end{document}
