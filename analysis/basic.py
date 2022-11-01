@@ -8,7 +8,13 @@ import samplot.colors as samcolors
 import shutil
 from matplotlib.ticker import FuncFormatter
 
-from data import furusato_df, furusato_rough_df, annual_df, annual_rough_df, local_df
+from furusato.data import (
+    furusato_df,
+    furusato_rough_df,
+    annual_df,
+    annual_rough_df,
+    local_df,
+)
 
 from config import productionPlotFolder
 

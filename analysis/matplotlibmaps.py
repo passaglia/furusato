@@ -11,7 +11,7 @@ from samplot.circusboy import CircusBoy
 
 import samplot.colors as samcolors
 
-from data import local_df, pref_df
+from furusato.data import local_df, pref_df
 from japandata.maps.data import add_df_to_map
 
 from config import productionPlotFolder
